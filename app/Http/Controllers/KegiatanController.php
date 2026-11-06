@@ -86,7 +86,12 @@ class KegiatanController extends Controller
 
     public function destroy(Kegiatan $kegiatan)
     {
-        $kegiatan->delete();
-        return redirect()->route('kegiatan.index')->with('success', 'Kegiatan berhasil dihapus.');
+        \DB::transaction(function () use ($kegiatan) {
+            $kegiatan->anomali()->delete();
+            $kegiatan->alokasi()->delete();
+            $kegiatan->delete();
+        });
+
+        return redirect()->route('kegiatan.index')->with('success', 'Kegiatan beserta seluruh alokasi petugas dan data anomalinya berhasil dihapus.');
     }
 }

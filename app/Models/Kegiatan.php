@@ -41,4 +41,14 @@ class Kegiatan extends Model
         $today = now()->startOfDay();
         return $today->between($this->mulai->startOfDay(), $this->selesai->endOfDay());
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($kegiatan) {
+            // Hapus semua anomali yang terkait dengan kegiatan ini
+            $kegiatan->anomali()->delete();
+            // Hapus semua alokasi yang terkait dengan kegiatan ini
+            $kegiatan->alokasi()->delete();
+        });
+    }
 }
