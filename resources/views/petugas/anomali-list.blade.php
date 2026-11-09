@@ -274,16 +274,38 @@
                             $val = $a->detail[$sc] ?? '-';
                             $valStr = is_array($val) ? json_encode($val) : (string)$val;
                             $isMatched = $searchKeyword !== '' && str_contains(strtolower($valStr), $searchKeyword);
-                            $hasHtml = (stripos($valStr, '<a ') !== false || stripos($valStr, '<button') !== false || stripos($valStr, '<span') !== false);
+                            
+                            // Deteksi apakah kolom ini adalah LINK atau berisi tag HTML/URL
+                            $isLinkCol = (stripos($sc, 'link') !== false || stripos($valStr, '<a ') !== false || filter_var($valStr, FILTER_VALIDATE_URL));
+                            $urlTarget = null;
+                            $linkText = 'Buka Tautan';
+                            if ($isLinkCol) {
+                                if (preg_match('/href=[\'"]([^\'"]+)[\'"]/', $valStr, $m)) {
+                                    $urlTarget = $m[1];
+                                    if (preg_match('/>([^<]+)<\/a>/', $valStr, $lm)) {
+                                        $linkText = trim($lm[1]);
+                                    }
+                                } elseif (filter_var($valStr, FILTER_VALIDATE_URL)) {
+                                    $urlTarget = $valStr;
+                                    $linkText = 'Buka Tautan';
+                                }
+                            }
                         @endphp
                         <td class="{{ $isMatched ? 'bg-primary-subtle text-primary fw-bold' : '' }}" style="white-space: normal; min-width: 140px; max-width: 340px; vertical-align: middle;">
-                            <span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">
-                                @if($hasHtml)
+                            @if($urlTarget)
+                                <a href="{{ $urlTarget }}" target="_blank" class="btn btn-sm btn-pastel-soft text-primary d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-2 fw-semibold" style="border-radius: 6px; font-size: 0.8rem;" title="Buka tautan di tab baru">
+                                    <i class="fa-solid fa-arrow-up-right-from-square small"></i>
+                                    <span>{{ $linkText }}</span>
+                                </a>
+                            @elseif(stripos($valStr, '<') !== false && stripos($valStr, '>') !== false)
+                                <span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">
                                     {!! $valStr !!}
-                                @else
+                                </span>
+                            @else
+                                <span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">
                                     {{ $valStr }}
-                                @endif
-                            </span>
+                                </span>
+                            @endif
                         </td>
                     @endforeach
 

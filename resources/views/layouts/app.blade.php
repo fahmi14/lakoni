@@ -475,6 +475,12 @@
         }
 
         /* Modal Backdrop & Z-Index Safety */
+        .modal {
+            z-index: 1065 !important;
+        }
+        .modal-dialog {
+            z-index: 1070 !important;
+        }
         #modalPastelConfirm {
             z-index: 1075 !important;
         }
@@ -482,7 +488,7 @@
             z-index: 1080 !important;
         }
         .modal-backdrop {
-            z-index: 1060;
+            z-index: 1050 !important;
         }
 
         /* Page Content Entry Motion */
@@ -621,7 +627,7 @@
                     <li>
                         <a href="{{ route('konfirmasi.index') }}" class="{{ request()->routeIs('konfirmasi.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-circle-question"></i>
-                            <span>Template Konfirmasi (JSON)</span>
+                            <span>Template Konfirmasi</span>
                         </a>
                     </li>
                     <li>
@@ -862,6 +868,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Pindahkan semua elemen modal ke direct child <body> agar tidak terpengaruh CSS stacking context (page-motion-wrapper)
+            document.querySelectorAll('.modal').forEach(function(modalEl) {
+                if (modalEl.parentNode !== document.body) {
+                    document.body.appendChild(modalEl);
+                }
+            });
+
             const confirmBtn = document.getElementById('btnModalConfirmAction');
             if (confirmBtn) {
                 confirmBtn.addEventListener('click', function() {
