@@ -297,6 +297,78 @@
             transform: translateY(-1px);
         }
 
+        /* Tombol Link Pastel Kalem, Modern & Elegan */
+        .btn-pastel-link-modern {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.79rem;
+            font-weight: 600;
+            color: #3b82f6 !important;
+            background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+            border: 1px solid rgba(147, 197, 253, 0.6);
+            border-radius: 8px;
+            text-decoration: none !important;
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.08);
+            transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            line-height: 1.3;
+            max-width: 100%;
+        }
+
+        .btn-pastel-link-modern:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #93c5fd;
+            color: #1d4ed8 !important;
+            transform: translateY(-1.5px);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.18);
+        }
+
+        .btn-pastel-link-modern:active {
+            transform: scale(0.97);
+        }
+
+        .btn-pastel-link-modern .btn-pastel-link-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            font-size: 0.75rem;
+            color: #2563eb;
+        }
+
+        .btn-pastel-link-modern .btn-pastel-link-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Badge Link Inline untuk URL di dalam teks */
+        .badge-pastel-link-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.55rem;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: #2563eb !important;
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            text-decoration: none !important;
+            transition: all 0.2s ease;
+            vertical-align: middle;
+            margin: 0 0.2rem;
+        }
+
+        .badge-pastel-link-inline:hover {
+            background-color: #dbeafe;
+            color: #1d4ed8 !important;
+            border-color: #93c5fd;
+            text-decoration: none;
+        }
+
         /* ======================================================== */
         /* CLEAN & SPACIOUS INPUT GROUP (Fix Mepet Kiri) */
         /* ======================================================== */

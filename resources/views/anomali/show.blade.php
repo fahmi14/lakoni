@@ -200,35 +200,7 @@
                                     <i class="fa-regular fa-circle-dot text-primary me-2" style="font-size: 0.65rem;"></i>{{ $kolom }}
                                 </td>
                                 <td class="pe-4 text-dark fw-semibold fs-6">
-                                    @php
-                                        $valStr = is_array($nilai) ? json_encode($nilai) : (string)$nilai;
-                                        
-                                        // Deteksi apakah variabel ini adalah LINK atau berisi tag <a> / URL
-                                        $isLinkCol = (stripos($kolom, 'link') !== false || stripos($valStr, '<a ') !== false || filter_var($valStr, FILTER_VALIDATE_URL));
-                                        $urlTarget = null;
-                                        $linkText = 'Buka Tautan';
-                                        if ($isLinkCol) {
-                                            if (preg_match('/href=[\'"]([^\'"]+)[\'"]/', $valStr, $m)) {
-                                                $urlTarget = $m[1];
-                                                if (preg_match('/>([^<]+)<\/a>/', $valStr, $lm)) {
-                                                    $linkText = trim($lm[1]);
-                                                }
-                                            } elseif (filter_var($valStr, FILTER_VALIDATE_URL)) {
-                                                $urlTarget = $valStr;
-                                                $linkText = 'Buka Tautan';
-                                            }
-                                        }
-                                    @endphp
-                                    @if($urlTarget)
-                                        <a href="{{ $urlTarget }}" target="_blank" class="btn btn-sm btn-pastel-soft text-primary d-inline-flex align-items-center gap-2 text-decoration-none py-1.5 px-3 fw-semibold shadow-sm" style="border-radius: 6px;" title="Buka tautan di tab baru">
-                                            <i class="fa-solid fa-arrow-up-right-from-square small"></i>
-                                            <span>{{ $linkText }}</span>
-                                        </a>
-                                    @elseif(stripos($valStr, '<') !== false && stripos($valStr, '>') !== false)
-                                        {!! $valStr !!}
-                                    @else
-                                        {{ $valStr }}
-                                    @endif
+                                    {!! \App\Helpers\LakoniHelper::formatCellContent($nilai, $kolom) !!}
                                 </td>
                             </tr>
                             @endforeach

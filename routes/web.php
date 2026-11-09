@@ -67,6 +67,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // 5. Manajemen Alokasi Petugas & Template
     Route::get('alokasi/template', [AlokasiController::class, 'downloadTemplate'])->name('alokasi.template');
     Route::get('alokasi/import', [AlokasiController::class, 'showImport'])->name('alokasi.import');
+    Route::post('alokasi/preview', [AlokasiController::class, 'previewImport'])->name('alokasi.preview');
+    Route::post('alokasi/execute-import', [AlokasiController::class, 'executeImport'])->name('alokasi.execute-import');
     Route::post('alokasi/import', [AlokasiController::class, 'import'])->name('alokasi.import.process');
     Route::post('alokasi/sync', [AlokasiController::class, 'sync'])->name('alokasi.sync');
     Route::post('alokasi/bulk-delete', [AlokasiController::class, 'bulkDelete'])->name('alokasi.bulk-delete');

@@ -34,7 +34,9 @@
                             @foreach($anomali->detail as $col => $val)
                             <tr>
                                 <td class="fw-semibold text-secondary">{{ $col }}</td>
-                                <td class="text-dark fw-medium">{{ $val }}</td>
+                                <td class="text-dark fw-medium">
+                                    {!! \App\Helpers\LakoniHelper::formatCellContent($val, $col) !!}
+                                </td>
                             </tr>
                             @endforeach
                         @endif

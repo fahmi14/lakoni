@@ -27,7 +27,7 @@
                 </a>
             </div>
 
-            <form action="{{ route('alokasi.import.process') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('alokasi.preview') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="mb-4">
@@ -44,14 +44,14 @@
                     <label class="form-label fw-bold small text-uppercase text-secondary mb-2">Pilih File Spreadsheet (.xlsx, .csv) <span class="text-danger">*</span></label>
                     <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
                     <div class="form-text small mt-2 text-muted">
-                        Format kolom standar: <code>nama_ppl</code>, <code>nama_pml</code>, dan <code>wilayah</code>.
+                        File akan dibaca dan ditampilkan halaman preview untuk memilih kolom <code>Nama PML</code>, <code>Nama PPL</code>, dan <code>Wilayah</code>.
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 pt-2">
                     <a href="{{ route('alokasi.index') }}" class="btn btn-light border px-4">Batal</a>
-                    <button type="submit" class="btn btn-pastel-success px-4 fw-semibold">
-                        <i class="fa-solid fa-file-import me-1"></i> Upload & Import Data
+                    <button type="submit" class="btn btn-pastel-primary px-4 fw-semibold">
+                        <i class="fa-solid fa-table-columns me-1"></i> Lanjut ke Preview & Pemetaan Kolom
                     </button>
                 </div>
             </form>

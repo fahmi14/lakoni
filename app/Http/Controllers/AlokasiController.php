@@ -17,17 +17,22 @@ class AlokasiController extends Controller
     public function index(Request $request)
     {
         $kegiatans = Kegiatan::orderBy('nama')->get();
-        $tipeWilayahs = Wilayah::select('tipe')->distinct()->pluck('tipe');
+        $tipeWilayahs = Wilayah::select('tipe')->whereNotNull('tipe')->distinct()->pluck('tipe');
+        $selectedKegiatanId = $request->input('id_kegiatan');
+
+        // Jika kegiatan belum dipilih sama sekali (tidak ada parameter id_kegiatan)
+        if (!$request->has('id_kegiatan')) {
+            $alokasis = collect();
+            return view('alokasi.index', compact('alokasis', 'kegiatans', 'tipeWilayahs', 'selectedKegiatanId'));
+        }
+
         $query = Alokasi::with(['kegiatan', 'wilayah']);
 
-        if ($request->filled('id_kegiatan')) {
-            $query->where('id_kegiatan', $request->id_kegiatan);
+        // Jika dipilih kegiatan tertentu (bukan 'all')
+        if ($selectedKegiatanId !== 'all' && !empty($selectedKegiatanId)) {
+            $query->where('id_kegiatan', $selectedKegiatanId);
         }
-        if ($request->filled('tipe_wilayah')) {
-            $query->whereHas('wilayah', function ($q) use ($request) {
-                $q->where('tipe', $request->tipe_wilayah);
-            });
-        }
+
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -41,7 +46,7 @@ class AlokasiController extends Controller
         }
 
         $alokasis = $query->paginate(15)->withQueryString();
-        return view('alokasi.index', compact('alokasis', 'kegiatans', 'tipeWilayahs'));
+        return view('alokasi.index', compact('alokasis', 'kegiatans', 'tipeWilayahs', 'selectedKegiatanId'));
     }
 
     public function create()
@@ -201,61 +206,126 @@ class AlokasiController extends Controller
     }
 
     /**
-     * Eksekusi proses import
+     * Preview File Alokasi & Pemetaan Kolom PML, PPL, Wilayah
      */
-    public function import(Request $request)
+    public function previewImport(Request $request)
     {
         $request->validate([
             'id_kegiatan' => 'required|exists:kegiatan,id',
             'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
         ]);
 
+        $kegiatan = Kegiatan::findOrFail($request->id_kegiatan);
         $file = $request->file('file');
+
+        $storedPath = $file->store('temp_imports');
+        $fullPath = storage_path('app/' . $storedPath);
+
         try {
-            $spreadsheet = IOFactory::load($file->getRealPath());
+            $spreadsheet = IOFactory::load($fullPath);
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet ? $worksheet->toArray() : [];
         } catch (\Throwable $e) {
-            return back()->with('error', 'Gagal membaca file alokasi. Pastikan format file Excel/CSV valid dan tidak dikunci/rusak.');
+            return back()->with('error', 'Gagal membaca file alokasi: ' . $e->getMessage());
         }
 
         if (count($rows) < 2) {
             return back()->with('error', 'File tidak memiliki baris data yang cukup.');
         }
 
-        $header = array_map(function ($h) {
-            return strtolower(trim((string)$h));
-        }, $rows[0]);
-
-        $colPpl = -1;
-        $colPml = -1;
-        $colWilayah = -1;
-
-        foreach ($header as $idx => $name) {
-            if (str_contains($name, 'ppl')) $colPpl = $idx;
-            elseif (str_contains($name, 'pml')) $colPml = $idx;
-            elseif (str_contains($name, 'wilayah') || str_contains($name, 'desa') || str_contains($name, 'sls')) $colWilayah = $idx;
+        // Ambil header baris pertama
+        $headers = [];
+        foreach ($rows[0] as $h) {
+            $hTrim = trim((string)$h);
+            if ($hTrim !== '') {
+                $headers[] = $hTrim;
+            }
         }
 
-        if ($colPpl === -1 || $colPml === -1) {
-            return back()->with('error', 'Kolom nama PPL dan PML tidak terdeteksi pada header file. Pastikan ada kolom "nama_ppl" dan "nama_pml".');
+        if (empty($headers)) {
+            return back()->with('error', 'Header kolom tidak ditemukan pada baris pertama file.');
+        }
+
+        // Siapkan preview 5 baris pertama
+        $previewRows = [];
+        $headerCount = count($headers);
+        $totalRows = count($rows) - 1;
+
+        for ($i = 1; $i <= min(5, $totalRows); $i++) {
+            $r = $rows[$i];
+            $item = [];
+            foreach ($headers as $idx => $hName) {
+                $item[$hName] = isset($r[$idx]) ? trim((string)$r[$idx]) : '';
+            }
+            $previewRows[] = $item;
+        }
+
+        return view('alokasi.preview', [
+            'kegiatan' => $kegiatan,
+            'filePath' => $storedPath,
+            'headers' => $headers,
+            'previewRows' => $previewRows,
+            'totalRows' => $totalRows,
+        ]);
+    }
+
+    /**
+     * Eksekusi proses import berdasarkan pemetaan kolom yang dipilih
+     */
+    public function executeImport(Request $request)
+    {
+        $request->validate([
+            'id_kegiatan' => 'required|exists:kegiatan,id',
+            'file_path' => 'required|string',
+            'kolom_pml' => 'required|string',
+            'kolom_ppl' => 'required|string',
+            'kolom_wilayah' => 'nullable|string',
+        ]);
+
+        $fullPath = storage_path('app/' . $request->file_path);
+        if (!file_exists($fullPath)) {
+            return redirect()->route('alokasi.import')->with('error', 'File import tidak ditemukan atau sesi upload telah kadaluarsa.');
+        }
+
+        try {
+            $spreadsheet = IOFactory::load($fullPath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet ? $worksheet->toArray() : [];
+        } catch (\Throwable $e) {
+            return redirect()->route('alokasi.import')->with('error', 'Gagal membaca file: ' . $e->getMessage());
+        }
+
+        if (count($rows) < 2) {
+            return redirect()->route('alokasi.import')->with('error', 'Data tidak cukup untuk diimpor.');
+        }
+
+        $headers = array_map(fn($h) => trim((string)$h), $rows[0]);
+        $colPmlIdx = array_search($request->kolom_pml, $headers);
+        $colPplIdx = array_search($request->kolom_ppl, $headers);
+        $colWilayahIdx = $request->filled('kolom_wilayah') ? array_search($request->kolom_wilayah, $headers) : false;
+
+        if ($colPmlIdx === false || $colPplIdx === false) {
+            return back()->with('error', 'Kolom PML atau PPL yang dipilih tidak ditemukan dalam file.');
         }
 
         $count = 0;
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
-            $ppl = isset($row[$colPpl]) ? trim((string)$row[$colPpl]) : '';
-            $pml = isset($row[$colPml]) ? trim((string)$row[$colPml]) : '';
+            $pml = isset($row[$colPmlIdx]) ? trim((string)$row[$colPmlIdx]) : '';
+            $ppl = isset($row[$colPplIdx]) ? trim((string)$row[$colPplIdx]) : '';
+
             if (empty($ppl) && empty($pml)) continue;
 
             $wilayahId = null;
-            if ($colWilayah !== -1 && !empty($row[$colWilayah])) {
-                $wilayahName = trim((string)$row[$colWilayah]);
-                $wilayah = Wilayah::firstOrCreate(
-                    ['nama' => $wilayahName],
-                    ['tipe' => 'sls']
-                );
-                $wilayahId = $wilayah->id;
+            if ($colWilayahIdx !== false && !empty($row[$colWilayahIdx])) {
+                $wilayahName = trim((string)$row[$colWilayahIdx]);
+                if (!empty($wilayahName)) {
+                    $wilayah = Wilayah::firstOrCreate(
+                        ['nama' => $wilayahName],
+                        ['tipe' => 'sls']
+                    );
+                    $wilayahId = $wilayah->id;
+                }
             }
 
             Alokasi::create([
@@ -267,8 +337,14 @@ class AlokasiController extends Controller
             $count++;
         }
 
+        // Hapus file temporary
+        @unlink($fullPath);
+
+        // Otomatis sinkronkan alokasi ke anomali yang belum terpetakan pada kegiatan ini
+        AnomaliSyncService::syncAlokasi((int)$request->id_kegiatan);
+
         return redirect()->route('alokasi.index', ['id_kegiatan' => $request->id_kegiatan])
-            ->with('success', "Berhasil mengimpor {$count} data alokasi petugas.");
+            ->with('success', "Berhasil mengimpor {$count} data alokasi petugas dan menyinkronkan dengan data anomali.");
     }
 
     /**

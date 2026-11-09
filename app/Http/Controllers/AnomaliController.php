@@ -9,10 +9,12 @@ use App\Models\Alokasi;
 use App\Models\Wilayah;
 use App\Services\AnomaliSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\Facades\DataTables;
+use App\Helpers\LakoniHelper;
 
 class AnomaliController extends Controller
 {
@@ -20,54 +22,11 @@ class AnomaliController extends Controller
     {
         $kegiatans = Kegiatan::orderBy('nama')->get();
         $konfirmasis = Konfirmasi::orderBy('nama')->get();
+        $selectedKegiatanId = $request->input('id_kegiatan');
 
-        $query = Anomali::with(['kegiatan', 'konfirmasi', 'alokasi.wilayah']);
-
-        if ($request->filled('id_kegiatan')) {
-            $query->where('id_kegiatan', $request->id_kegiatan);
-        }
-        if ($request->filled('id_konfirmasi')) {
-            $query->where('id_konfirmasi', $request->id_konfirmasi);
-        }
-        if ($request->filled('status')) {
-            if ($request->status === 'belum') {
-                $query->where(function ($q) {
-                    $q->where('status', 'belum')->orWhereNull('status');
-                });
-            } elseif ($request->status === 'sudah') {
-                $query->whereNotIn('status', ['belum'])->whereNotNull('status');
-            } else {
-                $query->where('status', $request->status);
-            }
-        }
-
-        // Custom Search: Mencari di semua variabel JSON detail, kolom, teks konfirmasi, dan nama kegiatan
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $query->where(function ($q) use ($search) {
-                $q->where('detail', 'like', "%{$search}%")
-                  ->orWhere('petugas_pengonfirmasi', 'like', "%{$search}%")
-                  ->orWhereHas('kegiatan', function ($kq) use ($search) {
-                      $kq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('konfirmasi', function ($kq) use ($search) {
-                      $kq->where('nama', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('alokasi', function ($aq) use ($search) {
-                      $aq->where('nama_ppl', 'like', "%{$search}%")
-                         ->orWhere('nama_pml', 'like', "%{$search}%")
-                         ->orWhereHas('wilayah', function ($wq) use ($search) {
-                             $wq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
-                         });
-                  });
-            });
-        }
-
-        $anomalis = $query->latest('id')->paginate(15)->withQueryString();
-
-        // Ambil daftar detailKeys untuk ekstraksi kolom JSON
+        // 1. Tentukan detailKeys & selectedColumns
         $detailKeys = [];
-        if ($request->filled('id_kegiatan')) {
+        if ($request->filled('id_kegiatan') && $request->id_kegiatan !== 'all') {
             $selectedKegiatan = $kegiatans->firstWhere('id', $request->id_kegiatan);
             if ($selectedKegiatan && !empty($selectedKegiatan->kolom) && is_array($selectedKegiatan->kolom)) {
                 $detailKeys = $selectedKegiatan->kolom;
@@ -75,18 +34,25 @@ class AnomaliController extends Controller
         }
 
         if (empty($detailKeys)) {
-            $sampleAnomaliQuery = clone $query;
-            $sampleAnomali = $sampleAnomaliQuery->first();
+            $sampleAnomali = Anomali::whereNotNull('detail')->first();
             $detailKeys = ($sampleAnomali && is_array($sampleAnomali->detail)) ? array_keys($sampleAnomali->detail) : [];
         }
 
-        // Kolom terpilih: Prioritaskan dari request, jika tidak ada cek session, jika tidak ada gunakan default 5 kolom pertama
-        $sessionKey = 'anomali_selected_columns_' . ($request->input('id_kegiatan', 'all'));
-        if ($request->has('columns')) {
-            $selectedColumns = $request->input('columns', []);
+        // Kolom terpilih: Hanya ambil jika request('columns') berupa array string (bukan internal DataTables columns parameter)
+        $idKegiatanKey = $request->filled('id_kegiatan') ? $request->input('id_kegiatan') : 'all';
+        $sessionKey = 'anomali_selected_columns_' . $idKegiatanKey;
+
+        $rawColumnsReq = $request->input('columns');
+        if (!empty($rawColumnsReq) && is_array($rawColumnsReq) && is_string(reset($rawColumnsReq))) {
+            $selectedColumns = array_values(array_filter($rawColumnsReq, fn($item) => is_string($item)));
             session([$sessionKey => $selectedColumns]);
         } elseif (session()->has($sessionKey)) {
-            $selectedColumns = session($sessionKey, []);
+            $saved = session($sessionKey, []);
+            if (is_array($saved) && (empty($saved) || is_string(reset($saved)))) {
+                $selectedColumns = array_values(array_filter($saved, fn($item) => is_string($item)));
+            } else {
+                $selectedColumns = [];
+            }
         } else {
             $selectedColumns = [];
         }
@@ -96,7 +62,203 @@ class AnomaliController extends Controller
             session([$sessionKey => $selectedColumns]);
         }
 
-        return view('anomali.index', compact('anomalis', 'kegiatans', 'konfirmasis', 'detailKeys', 'selectedColumns'));
+        // 2. Jika Request AJAX dari Yajra DataTables
+        if ($request->ajax()) {
+            // Jika kegiatan belum dipilih sama sekali, kembalikan data kosong
+            if (!$request->has('id_kegiatan') || $request->id_kegiatan === '') {
+                return DataTables::of(collect())->make(true);
+            }
+
+            $query = Anomali::with(['kegiatan', 'konfirmasi', 'alokasi.wilayah']);
+
+            if ($request->filled('id_kegiatan') && $request->id_kegiatan !== 'all') {
+                $query->where('id_kegiatan', $request->id_kegiatan);
+            }
+            if ($request->filled('id_konfirmasi')) {
+                $query->where('id_konfirmasi', $request->id_konfirmasi);
+            }
+            if ($request->filled('status')) {
+                if ($request->status === 'belum') {
+                    $query->where(function ($q) {
+                        $q->where('status', 'belum')->orWhereNull('status');
+                    });
+                } elseif ($request->status === 'sudah') {
+                    $query->whereNotIn('status', ['belum'])->whereNotNull('status');
+                } else {
+                    $query->where('status', $request->status);
+                }
+            }
+
+            // Custom search keyword
+            if ($request->filled('custom_search')) {
+                $search = trim($request->custom_search);
+                $query->where(function ($q) use ($search) {
+                    $q->where('detail', 'like', "%{$search}%")
+                      ->orWhere('petugas_pengonfirmasi', 'like', "%{$search}%")
+                      ->orWhereHas('kegiatan', function ($kq) use ($search) {
+                          $kq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('konfirmasi', function ($kq) use ($search) {
+                          $kq->where('nama', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('alokasi', function ($aq) use ($search) {
+                          $aq->where('nama_ppl', 'like', "%{$search}%")
+                             ->orWhere('nama_pml', 'like', "%{$search}%")
+                             ->orWhereHas('wilayah', function ($wq) use ($search) {
+                                 $wq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            $rawColumnsList = ['checkbox', 'kegiatan_info', 'petugas_info', 'status_badge', 'action'];
+
+            $dataTable = DataTables::of($query)
+                ->addIndexColumn()
+                ->addColumn('checkbox', function ($a) {
+                    return '<div class="form-check d-flex justify-content-center mb-0">
+                                <input type="checkbox" class="form-check-input check-anomali-item" value="' . $a->id . '">
+                            </div>';
+                })
+                ->addColumn('kegiatan_info', function ($a) {
+                    $kodeKeg = e($a->kegiatan->kode ?? '-');
+                    $namaKonf = e($a->konfirmasi->nama ?? '-');
+                    return '<span class="badge-pastel-primary mb-1">' . $kodeKeg . '</span>' .
+                           '<div class="fw-bold text-dark fs-6" style="word-break: break-word;">' . $namaKonf . '</div>';
+                })
+                ->addColumn('petugas_info', function ($a) {
+                    if ($a->alokasi) {
+                        return '<div class="small mb-1 leading-tight">
+                                    <div><span class="text-muted">PPL:</span> <strong class="text-dark">' . e($a->alokasi->nama_ppl) . '</strong></div>
+                                    <div><span class="text-muted">PML:</span> <strong class="text-dark">' . e($a->alokasi->nama_pml) . '</strong></div>
+                                </div>';
+                    }
+                    return '<span class="badge-pastel-neutral mb-1">Belum terpetakan</span>';
+                })
+                ->addColumn('status_badge', function ($a) {
+                    $html = '';
+                    if ($a->status === 'sesuai') {
+                        $html = '<span class="badge-pastel-success"><i class="fa-solid fa-check-double me-1"></i> Sesuai</span>';
+                    } elseif ($a->status === 'tidak_sesuai') {
+                        $html = '<span class="badge-pastel-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Perlu Revisi</span>';
+                    } elseif ($a->status === 'dikonfirmasi') {
+                        $html = '<span class="badge-pastel-primary"><i class="fa-solid fa-check me-1"></i> Dikonfirmasi</span>';
+                    } else {
+                        $html = '<span class="badge-pastel-warning"><i class="fa-solid fa-clock me-1"></i> Menunggu</span>';
+                    }
+
+                    if ($a->petugas_pengonfirmasi) {
+                        $html .= '<div class="small text-muted mt-1"><i class="fa-solid fa-user-check me-1"></i> ' . e($a->petugas_pengonfirmasi) . '</div>';
+                    }
+                    return $html;
+                })
+                ->addColumn('action', function ($a) {
+                    $detailUrl = route('anomali.show', $a);
+                    $deleteUrl = route('anomali.destroy', $a);
+                    $token = csrf_field();
+                    $method = method_field('DELETE');
+
+                    // Tombol WA jika ada no HP
+                    $waBtn = '';
+                    $noHp = null;
+                    if ($a->alokasi && is_array($a->detail)) {
+                        foreach ($a->detail as $k => $v) {
+                            $keyLower = strtolower(str_replace([' ', '_', '-'], '', $k));
+                            if (in_array($keyLower, ['nohp', 'hp', 'telepon', 'notelp', 'telp', 'wa', 'whatsapp', 'nomorhp'])) {
+                                $cleanDigits = preg_replace('/[^0-9]/', '', (string)$v);
+                                if (strlen($cleanDigits) >= 9 && strlen($cleanDigits) <= 15) {
+                                    $noHp = $cleanDigits;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if ($noHp) {
+                        if (str_starts_with($noHp, '0')) $noHp = '62' . substr($noHp, 1);
+                        elseif (str_starts_with($noHp, '8')) $noHp = '62' . $noHp;
+                        
+                        $template = $a->kegiatan->template_wa ?? "Hai {nama_ppl}, mohon konfirmasi untuk anomali {nama_anomali} di kegiatan {nama_kegiatan}. Terima kasih.";
+                        $namaPpl = $a->alokasi->nama_ppl ?? ($a->detail['Nama PPL'] ?? ($a->detail['PPL'] ?? 'Petugas'));
+                        $namaPml = $a->alokasi->nama_pml ?? ($a->detail['Nama PML'] ?? ($a->detail['PML'] ?? 'Pengawas'));
+                        $namaAnomali = $a->konfirmasi->nama ?? 'Anomali';
+                        $namaKegiatan = $a->kegiatan->nama ?? 'Survei';
+
+                        $replacements = [
+                            '{nama_ppl}' => $namaPpl,
+                            '{nama_pml}' => $namaPml,
+                            '{nama_anomali}' => $namaAnomali,
+                            '{nama_kegiatan}' => $namaKegiatan,
+                            '{kode_kegiatan}' => $a->kegiatan->kode ?? '',
+                            '{status}' => $a->status,
+                        ];
+
+                        if (is_array($a->detail)) {
+                            foreach ($a->detail as $dk => $dv) {
+                                $replacements['{' . $dk . '}'] = (string)$dv;
+                            }
+                        }
+
+                        $pesanWa = strtr($template, $replacements);
+                        $waLink = "https://wa.me/{$noHp}?text=" . urlencode($pesanWa);
+                        $waBtn = '<a href="' . $waLink . '" target="_blank" class="btn-table-action text-success" title="Chat WhatsApp"><i class="fa-brands fa-whatsapp fs-5"></i></a>';
+                    }
+
+                    return '
+                    <div class="d-inline-flex gap-1 justify-content-center align-items-center">
+                        ' . $waBtn . '
+                        <a href="' . $detailUrl . '" class="btn-table-action" title="Lihat Detail & Jawaban">
+                            <i class="fa-solid fa-eye text-primary"></i>
+                        </a>
+                        <form action="' . $deleteUrl . '" method="POST" onsubmit="return confirmPastelAction(this, { title: \'Hapus Data Anomali\', message: \'Hapus data anomali #' . $a->id . ' ini dari sistem?\' })" class="d-inline">
+                            ' . $token . '
+                            ' . $method . '
+                            <button type="submit" class="btn-table-action text-danger" title="Hapus Anomali">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>';
+                });
+
+            // Tambahkan kolom detail JSON dinamis
+            foreach ($selectedColumns as $sc) {
+                if (!is_string($sc)) continue;
+                $colKey = 'detail_' . md5($sc);
+                $rawColumnsList[] = $colKey;
+                $dataTable->addColumn($colKey, function ($a) use ($sc) {
+                    $val = $a->detail[$sc] ?? '-';
+                    return LakoniHelper::formatCellContent($val, $sc);
+                });
+            }
+
+            return $dataTable
+                ->filter(function ($query) use ($request) {
+                    if ($request->has('search') && !empty($request->input('search.value'))) {
+                        $search = trim($request->input('search.value'));
+                        $query->where(function ($q) use ($search) {
+                            $q->where('detail', 'like', "%{$search}%")
+                              ->orWhere('petugas_pengonfirmasi', 'like', "%{$search}%")
+                              ->orWhereHas('kegiatan', function ($kq) use ($search) {
+                                  $kq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
+                              })
+                              ->orWhereHas('konfirmasi', function ($kq) use ($search) {
+                                  $kq->where('nama', 'like', "%{$search}%");
+                              })
+                              ->orWhereHas('alokasi', function ($aq) use ($search) {
+                                  $aq->where('nama_ppl', 'like', "%{$search}%")
+                                     ->orWhere('nama_pml', 'like', "%{$search}%");
+                              });
+                        });
+                    }
+                })
+                ->rawColumns($rawColumnsList)
+                ->make(true);
+        }
+
+        // Hitung total anomali untuk info badge
+        $totalAnomali = Anomali::count();
+
+        return view('anomali.index', compact('kegiatans', 'konfirmasis', 'detailKeys', 'selectedColumns', 'totalAnomali', 'selectedKegiatanId'));
     }
 
     public function create()

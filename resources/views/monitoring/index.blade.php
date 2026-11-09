@@ -151,6 +151,10 @@
 @endpush
 
 @section('content')
+@php
+    $hasSelectedKegiatan = request()->filled('id_kegiatan');
+@endphp
+
 <!-- Header Page -->
 <div class="row align-items-center mb-4">
     <div class="col-md-7">
@@ -158,9 +162,11 @@
         <p class="text-muted mb-0">Tabel terpadu rekapitulasi progres petugas, perbandingan belum konfirmasi, dan rekap isian tiap pertanyaan template.</p>
     </div>
     <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
-        <a href="{{ route('anomali.download-respon') }}" class="btn-pastel-primary d-inline-flex align-items-center text-decoration-none">
-            <i class="fa-solid fa-file-excel me-2"></i> Download Respon Excel
-        </a>
+        @if($hasSelectedKegiatan)
+            <a href="{{ route('anomali.download-respon', request()->query()) }}" class="btn-pastel-primary d-inline-flex align-items-center text-decoration-none">
+                <i class="fa-solid fa-file-excel me-2"></i> Download Respon Excel
+            </a>
+        @endif
     </div>
 </div>
 
@@ -173,39 +179,42 @@
             </div>
             <span class="fw-bold text-dark fs-6">Filter Rekapitulasi</span>
         </div>
-        <button type="button" id="btnResetFilter" class="btn btn-sm btn-link text-decoration-none text-muted p-0">
-            <i class="fa-solid fa-rotate-left me-1"></i> Reset Filter
-        </button>
+        @if($hasSelectedKegiatan)
+            <button type="button" id="btnResetFilter" class="btn btn-sm btn-link text-decoration-none text-muted p-0">
+                <i class="fa-solid fa-rotate-left me-1"></i> Reset Filter
+            </button>
+        @endif
     </div>
 
     <form id="filterForm" class="row g-3">
-        <!-- 1. Filter Tahun -->
+        <!-- 1. Filter Kegiatan (Wajib Dipilih Terlebih Dahulu) -->
+        <div class="col-12 col-md-5">
+            <label class="form-label small fw-bold text-secondary mb-1">Pilih Kegiatan <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 12px 0 0 12px; border: 1.5px solid #e2e8f0; border-right: none;">
+                    <i class="fa-solid fa-calendar-check small"></i>
+                </span>
+                <select name="id_kegiatan" id="filterKegiatan" class="form-select filter-select" style="border-radius: 0 12px 12px 0;" required>
+                    <option value="">-- Pilih Kegiatan Terlebih Dahulu --</option>
+                    <option value="all" {{ request('id_kegiatan') === 'all' ? 'selected' : '' }}>-- Tampilkan Semua Kegiatan --</option>
+                    @foreach($kegiatans as $kg)
+                        <option value="{{ $kg->id }}" {{ (string)request('id_kegiatan') === (string)$kg->id ? 'selected' : '' }}>[{{ $kg->kode }}] {{ $kg->nama }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <!-- 2. Filter Tahun -->
         <div class="col-12 col-md-3">
             <label class="form-label small fw-bold text-secondary mb-1">Tahun Kegiatan</label>
             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 12px 0 0 12px; border: 1.5px solid #e2e8f0; border-right: none;">
                     <i class="fa-regular fa-calendar small"></i>
                 </span>
-                <select name="tahun" id="filterTahun" class="form-select filter-select" style="border-radius: 0 12px 12px 0;">
+                <select name="tahun" id="filterTahun" class="form-select filter-select" style="border-radius: 0 12px 12px 0;" {{ !$hasSelectedKegiatan ? 'disabled' : '' }}>
                     <option value="">Semua Tahun</option>
                     @foreach($years as $yr)
                         <option value="{{ $yr }}" {{ (string)$yr === (string)date('Y') ? 'selected' : '' }}>Tahun {{ $yr }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-
-        <!-- 2. Filter Kegiatan -->
-        <div class="col-12 col-md-5">
-            <label class="form-label small fw-bold text-secondary mb-1">Kegiatan</label>
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 12px 0 0 12px; border: 1.5px solid #e2e8f0; border-right: none;">
-                    <i class="fa-solid fa-calendar-check small"></i>
-                </span>
-                <select name="id_kegiatan" id="filterKegiatan" class="form-select filter-select" style="border-radius: 0 12px 12px 0;">
-                    <option value="">Semua Kegiatan</option>
-                    @foreach($kegiatans as $kg)
-                        <option value="{{ $kg->id }}">[{{ $kg->kode }}] {{ $kg->nama }}</option>
                     @endforeach
                 </select>
             </div>
@@ -218,7 +227,7 @@
                 <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 12px 0 0 12px; border: 1.5px solid #e2e8f0; border-right: none;">
                     <i class="fa-solid fa-circle-question small"></i>
                 </span>
-                <select name="id_konfirmasi" id="filterKonfirmasi" class="form-select filter-select" style="border-radius: 0 12px 12px 0;">
+                <select name="id_konfirmasi" id="filterKonfirmasi" class="form-select filter-select" style="border-radius: 0 12px 12px 0;" {{ !$hasSelectedKegiatan ? 'disabled' : '' }}>
                     @foreach($konfirmasis as $index => $kf)
                         <option value="{{ $kf->id }}" {{ $index === 0 ? 'selected' : '' }}>{{ $kf->nama }}</option>
                     @endforeach
@@ -227,6 +236,19 @@
         </div>
     </form>
 </div>
+
+@if(!$hasSelectedKegiatan)
+    <!-- Banner Informasi Wajib Memilih Kegiatan -->
+    <div class="card card-clean p-5 text-center my-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; border-radius: 50%; background: rgba(79, 111, 246, 0.1); color: var(--lk-primary);">
+            <i class="fa-solid fa-chart-line fs-2"></i>
+        </div>
+        <h5 class="fw-bold text-dark mb-2">Silakan Pilih Kegiatan Terlebih Dahulu</h5>
+        <p class="text-muted small mx-auto mb-3" style="max-width: 480px; line-height: 1.6;">
+            Pilih salah satu kegiatan survei atau opsi <strong>Tampilkan Semua Kegiatan</strong> pada dropdown filter di atas untuk menampilkan ringkasan metrik statistik dan tabel rekapitulasi monitoring progres petugas.
+        </p>
+    </div>
+@else
 
 <!-- 4 Cards Stat Summary Pastel -->
 <div class="row g-3 mb-4">
@@ -309,6 +331,7 @@
         </table>
     </div>
 </div>
+@endif
 @endsection
 
 @push('scripts')
@@ -504,21 +527,27 @@
                 });
             }
 
-            // Inisialisasi load pertama
-            loadRekapData();
-
-            // Refresh saat filter berubah
-            $('#filterTahun, #filterKegiatan, #filterKonfirmasi').on('change', function() {
+            // Inisialisasi load pertama jika kegiatan dipilih
+            const initialKegiatan = $('#filterKegiatan').val();
+            if (initialKegiatan) {
                 loadRekapData();
+            }
+
+            // Ganti kegiatan: redirect dengan query param agar seluruh state sinkron
+            $('#filterKegiatan').on('change', function() {
+                const keg = $(this).val();
+                if (keg) {
+                    window.location.href = "{{ route('monitoring.index') }}?id_kegiatan=" + encodeURIComponent(keg);
+                } else {
+                    window.location.href = "{{ route('monitoring.index') }}";
+                }
             });
 
-            // Tombol Reset Filter
-            $('#btnResetFilter').on('click', function() {
-                $('#filterTahun').val('');
-                $('#filterKegiatan').val('');
-                // Kembalikan ke opsi pertama template konfirmasi
-                $('#filterKonfirmasi').val($('#filterKonfirmasi option:first').val());
-                loadRekapData();
+            // Refresh saat filter tahun atau template berubah
+            $('#filterTahun, #filterKonfirmasi').on('change', function() {
+                if ($('#filterKegiatan').val()) {
+                    loadRekapData();
+                }
             });
 
             // Sanitasi HTML / XSS Prevention

@@ -246,7 +246,7 @@
                     </th>
                     <th style="width: 50px;" class="text-center">No</th>
                     <th>Nama Wilayah</th>
-                    <th>Kode Wilayah</th>
+                    <!-- <th>Kode Wilayah</th> -->
                     <th>Tipe Wilayah</th>
                     <th>Penggunaan Alokasi</th>
                     <th style="width: 120px;" class="text-center">Aksi</th>
@@ -308,13 +308,13 @@
                         return '<span class="fw-bold text-dark fs-6">' + (data || '-') + '</span>';
                     }
                 },
-                { 
-                    data: 'kode', 
-                    name: 'kode',
-                    render: function(data, type, row) {
-                        return data ? '<span class="font-monospace text-secondary small bg-light px-2 py-1 rounded border">' + data + '</span>' : '<span class="text-muted small">-</span>';
-                    }
-                },
+                // { 
+                //     data: 'kode', 
+                //     name: 'kode',
+                //     render: function(data, type, row) {
+                //         return data ? '<span class="font-monospace text-secondary small bg-light px-2 py-1 rounded border">' + data + '</span>' : '<span class="text-muted small">-</span>';
+                //     }
+                // },
                 { data: 'tipe_badge', name: 'tipe', orderable: true, searchable: true },
                 { data: 'alokasi_count', name: 'alokasi_count', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }

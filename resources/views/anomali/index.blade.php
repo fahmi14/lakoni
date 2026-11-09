@@ -3,105 +3,147 @@
 @section('title', 'Manajemen Anomali — LAKONI')
 
 @push('styles')
-<style>
-    .column-selector-menu {
-        max-height: 320px;
-        overflow-y: auto;
-        min-width: 260px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        border: 1px solid #e2e8f0;
-    }
-    .filter-input-control {
-        height: 42px !important;
-        border-radius: 12px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        font-size: 0.88rem !important;
-    }
-    .filter-input-group .input-group-text {
-        height: 42px !important;
-        border-radius: 12px 0 0 12px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        border-right: none !important;
-    }
-    .filter-input-group .form-control,
-    .filter-input-group .form-select {
-        height: 42px !important;
-        border-radius: 0 12px 12px 0 !important;
-        border: 1.5px solid #e2e8f0 !important;
-        font-size: 0.88rem !important;
-    }
-    .btn-filter-action {
-        height: 42px !important;
-        border-radius: 12px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-weight: 600 !important;
-        font-size: 0.875rem !important;
-        transition: all 0.2s ease !important;
-    }
+    <!-- DataTables Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <style>
+        .column-selector-menu {
+            max-height: 340px;
+            overflow-y: auto;
+            min-width: 270px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+            border: 1px solid #e2e8f0;
+        }
+        .filter-input-control {
+            height: 42px !important;
+            border-radius: 12px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            font-size: 0.88rem !important;
+            background-color: #ffffff;
+        }
+        .filter-input-group .input-group-text {
+            height: 42px !important;
+            border-radius: 12px 0 0 12px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            border-right: none !important;
+            background-color: #f8fafc;
+        }
+        .filter-input-group .form-control,
+        .filter-input-group .form-select {
+            height: 42px !important;
+            border-radius: 0 12px 12px 0 !important;
+            border: 1.5px solid #e2e8f0 !important;
+            font-size: 0.88rem !important;
+            background-color: #ffffff;
+        }
+        .btn-filter-action {
+            height: 42px !important;
+            border-radius: 12px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            transition: all 0.2s ease !important;
+        }
 
-    /* Floating Action Bar Kotak, Pastel, Kalem & Elegan */
-    .bulk-action-bar {
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background: #ffffff;
-        color: #1e293b;
-        padding: 0.75rem 1.4rem;
-        border-radius: 4px; /* Kotak */
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        z-index: 1040;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-        opacity: 0;
-        pointer-events: none;
-    }
-    .bulk-action-bar.show {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-    }
-</style>
+        /* Floating Action Bar Kotak, Pastel, Kalem & Elegan */
+        .bulk-action-bar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #ffffff;
+            color: #1e293b;
+            padding: 0.75rem 1.4rem;
+            border-radius: 4px; /* Kotak */
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            z-index: 1040;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .bulk-action-bar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* DataTables Custom Polish */
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: var(--lk-primary) !important;
+            border-color: var(--lk-primary) !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 10px;
+            border: 1.5px solid #cbd5e1;
+            padding: 0.45rem 2rem 0.45rem 0.85rem;
+            font-size: 0.875rem;
+            outline: none;
+            cursor: pointer;
+            background-color: #ffffff;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 10px;
+            border: 1.5px solid #cbd5e1;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.875rem;
+            outline: none;
+            background-color: #ffffff;
+        }
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--lk-primary);
+            box-shadow: 0 0 0 3px rgba(79, 111, 246, 0.12);
+        }
+    </style>
 @endpush
 
 @section('content')
+@php
+    $hasSelectedKegiatan = request()->filled('id_kegiatan');
+@endphp
+
 <div class="row mb-4 align-items-center">
     <div class="col-md-5">
         <h3 class="fw-bold brand-font text-dark mb-1">Manajemen Anomali</h3>
         <p class="text-muted mb-0">Daftar temuan anomali data lapangan yang perlu dikonfirmasi</p>
     </div>
     <div class="col-md-7 text-md-end mt-3 mt-md-0 d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
-        <!-- Tombol Sinkron Alokasi Petugas ke Anomali -->
-        <form action="{{ route('anomali.sync') }}" method="POST" class="d-inline">
-            @csrf
-            @if(request()->filled('id_kegiatan'))
-                <input type="hidden" name="id_kegiatan" value="{{ request('id_kegiatan') }}">
-            @endif
-            <button type="submit" class="btn btn-pastel-warning shadow-sm d-inline-flex align-items-center justify-content-center text-center px-3 py-2" title="Sinkronkan pemetaan petugas terbaru ke anomali yang belum terpetakan">
-                <i class="fa-solid fa-arrows-rotate fs-6 me-2"></i>
-                <span>Sinkron Alokasi Petugas</span>
-            </button>
-        </form>
+        @if($hasSelectedKegiatan)
+            <!-- Tombol Sinkron Alokasi Petugas ke Anomali -->
+            <form action="{{ route('anomali.sync') }}" method="POST" class="d-inline">
+                @csrf
+                @if(request('id_kegiatan') !== 'all')
+                    <input type="hidden" name="id_kegiatan" value="{{ request('id_kegiatan') }}">
+                @endif
+                <button type="submit" class="btn btn-pastel-warning shadow-sm d-inline-flex align-items-center justify-content-center text-center px-3 py-2" title="Sinkronkan pemetaan petugas terbaru ke anomali yang belum terpetakan">
+                    <i class="fa-solid fa-arrows-rotate fs-6 me-2"></i>
+                    <span>Sinkron Alokasi Petugas</span>
+                </button>
+            </form>
 
-        <!-- Tombol Download Respon Excel (Hanya aktif/jelas jika filter kegiatan & konfirmasi dipilih) -->
-        <a href="{{ route('anomali.download-respon', request()->query()) }}" class="btn btn-pastel-success shadow-sm d-inline-flex align-items-center justify-content-center text-center px-3 py-2" title="Unduh respon konfirmasi dalam format spreadsheet (wajib pilih Kegiatan & Template Konfirmasi)">
-            <i class="fa-solid fa-file-excel fs-6 me-2"></i>
-            <span>Download Respon Excel</span>
-        </a>
-        <a href="{{ route('anomali.import') }}" class="btn btn-pastel-primary shadow-sm d-inline-flex align-items-center justify-content-center text-center px-3 py-2">
-            <i class="fa-solid fa-file-import fs-6 me-2"></i>
-            <span>Import Excel / CSV</span>
-        </a>
-        <a href="{{ route('anomali.create') }}" class="btn btn-light border text-secondary d-inline-flex align-items-center justify-content-center text-center px-3 py-2">
-            <i class="fa-solid fa-plus fs-6 me-1"></i>
-            <span>Tambah</span>
-        </a>
+            <!-- Tombol Download Respon Excel (Hanya aktif/jelas jika filter kegiatan & konfirmasi dipilih) -->
+            <a href="{{ route('anomali.download-respon', request()->query()) }}" id="btnDownloadResponExcel" class="btn btn-pastel-success shadow-sm d-inline-flex align-items-center justify-content-center text-center px-3 py-2" title="Unduh respon konfirmasi dalam format spreadsheet">
+                <i class="fa-solid fa-file-excel fs-6 me-2"></i>
+                <span>Download Respon Excel</span>
+            </a>
+            <a href="{{ route('anomali.import') }}" class="btn btn-pastel-primary shadow-sm d-inline-flex align-items-center justify-content-center text-center px-3 py-2">
+                <i class="fa-solid fa-file-import fs-6 me-2"></i>
+                <span>Import Excel / CSV</span>
+            </a>
+            <a href="{{ route('anomali.create') }}" class="btn btn-light border text-secondary d-inline-flex align-items-center justify-content-center text-center px-3 py-2">
+                <i class="fa-solid fa-plus fs-6 me-1"></i>
+                <span>Tambah</span>
+            </a>
+        @endif
     </div>
 </div>
 
@@ -115,34 +157,24 @@
             <span class="small fw-bold text-dark text-uppercase" style="letter-spacing: 0.05em;">Filter Anomali & Ekspor Respon</span>
         </div>
         <div>
-            @if(!request()->filled('id_kegiatan') || !request()->filled('id_konfirmasi'))
-                <span class="badge-pastel-warning px-3 py-1" style="font-size: 0.75rem;">
-                    <i class="fa-solid fa-circle-info me-1"></i> Pilih Kegiatan & Template untuk unduh Excel
-                </span>
-            @else
-                <span class="badge-pastel-success px-3 py-1" style="font-size: 0.75rem;">
-                    <i class="fa-solid fa-circle-check me-1"></i> Siap Diunduh: Detail dipecah per kolom kegiatan
-                </span>
-            @endif
+            <span id="badgeInfoDownload" class="badge-pastel-warning px-3 py-1" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-circle-info me-1"></i> Pilih Kegiatan & Template untuk unduh Excel
+            </span>
         </div>
     </div>
 
-    <form action="{{ route('anomali.index') }}" method="GET" class="row g-3 align-items-end">
-        <!-- Pertahankan pilihan kolom ekstrak -->
-        @foreach($selectedColumns as $sc)
-            <input type="hidden" name="columns[]" value="{{ $sc }}">
-        @endforeach
-
+    <form id="filterAnomaliForm" class="row g-3 align-items-end">
         <div class="col-12 col-md-3">
-            <label class="form-label small fw-bold text-secondary mb-1">Kegiatan <span class="text-danger">*</span></label>
+            <label class="form-label small fw-bold text-secondary mb-1">Pilih Kegiatan <span class="text-danger">*</span></label>
             <div class="input-group filter-input-group">
-                <span class="input-group-text bg-light border-end-0 text-muted">
+                <span class="input-group-text">
                     <i class="fa-solid fa-calendar-check small"></i>
                 </span>
-                <select name="id_kegiatan" class="form-select" id="filter_kegiatan">
-                    <option value="">-- Semua Kegiatan --</option>
+                <select name="id_kegiatan" class="form-select" id="filter_kegiatan" required>
+                    <option value="">-- Pilih Kegiatan Terlebih Dahulu --</option>
+                    <option value="all" {{ request('id_kegiatan') === 'all' ? 'selected' : '' }}>-- Tampilkan Semua Kegiatan --</option>
                     @foreach($kegiatans as $k)
-                        <option value="{{ $k->id }}" {{ request('id_kegiatan') == $k->id ? 'selected' : '' }}>
+                        <option value="{{ $k->id }}" {{ (string)request('id_kegiatan') === (string)$k->id ? 'selected' : '' }}>
                             [{{ $k->kode }}] {{ $k->nama }}
                         </option>
                     @endforeach
@@ -151,12 +183,12 @@
         </div>
 
         <div class="col-12 col-md-3">
-            <label class="form-label small fw-bold text-secondary mb-1">Template Konfirmasi <span class="text-danger">*</span></label>
+            <label class="form-label small fw-bold text-secondary mb-1">Template Konfirmasi</label>
             <div class="input-group filter-input-group">
-                <span class="input-group-text bg-light border-end-0 text-muted">
+                <span class="input-group-text">
                     <i class="fa-solid fa-circle-question small"></i>
                 </span>
-                <select name="id_konfirmasi" class="form-select" id="filter_konfirmasi">
+                <select name="id_konfirmasi" class="form-select" id="filter_konfirmasi" {{ !$hasSelectedKegiatan ? 'disabled' : '' }}>
                     <option value="">-- Semua Template --</option>
                     @foreach($konfirmasis as $konf)
                         <option value="{{ $konf->id }}" {{ request('id_konfirmasi') == $konf->id ? 'selected' : '' }}>
@@ -169,7 +201,7 @@
 
         <div class="col-12 col-md-2">
             <label class="form-label small fw-bold text-secondary mb-1">Status</label>
-            <select name="status" class="form-select filter-input-control">
+            <select name="status" class="form-select filter-input-control" id="filter_status" {{ !$hasSelectedKegiatan ? 'disabled' : '' }}>
                 <option value="">-- Semua Status --</option>
                 <option value="belum" {{ request('status') === 'belum' ? 'selected' : '' }}>Belum Konfirmasi</option>
                 <option value="sudah" {{ request('status') === 'sudah' ? 'selected' : '' }}>Sudah Konfirmasi</option>
@@ -177,276 +209,118 @@
         </div>
 
         <div class="col-12 col-md-3">
-            <label class="form-label small fw-bold text-secondary mb-1">Custom Search (Semua Variabel)</label>
+            <label class="form-label small fw-bold text-secondary mb-1">Pencarian Variabel / Kata Kunci</label>
             <div class="input-group filter-input-group">
-                <span class="input-group-text bg-light border-end-0 text-muted">
+                <span class="input-group-text">
                     <i class="fa-solid fa-magnifying-glass small"></i>
                 </span>
-                <input type="text" name="search" class="form-control border-start-0" 
+                <input type="text" id="filter_custom_search" class="form-control" 
                        placeholder="Cari kata kunci apapun..." 
-                       value="{{ request('search') }}">
+                       value="{{ request('search') }}" {{ !$hasSelectedKegiatan ? 'disabled' : '' }}>
             </div>
         </div>
 
         <div class="col-12 col-md-1 d-flex gap-1">
-            <button type="submit" class="btn btn-pastel-primary btn-filter-action flex-grow-1" title="Terapkan Filter & Pencarian">
+            <button type="submit" class="btn btn-pastel-primary btn-filter-action flex-grow-1" title="Terapkan Filter" {{ !$hasSelectedKegiatan ? 'disabled' : '' }}>
                 <i class="fa-solid fa-filter"></i>
             </button>
-            @if(request()->has('id_kegiatan') || request()->has('id_konfirmasi') || request()->has('status') || request()->has('search'))
-                <a href="{{ route('anomali.index') }}" class="btn btn-light border btn-filter-action px-2" title="Reset filter" style="min-width: 42px;">
+            @if($hasSelectedKegiatan)
+                <button type="button" id="btnResetFilter" class="btn btn-light border btn-filter-action px-2" title="Reset filter" style="min-width: 42px;">
                     <i class="fa-solid fa-arrows-rotate"></i>
-                </a>
+                </button>
             @endif
         </div>
     </form>
 </div>
 
-<!-- Header Aksi & Atur Kolom Detail Ekstrak JSON -->
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div class="d-flex align-items-center gap-3">
-        <div class="text-muted small">
-            Menampilkan <strong>{{ $anomalis->total() }}</strong> data temuan anomali
+@if(!$hasSelectedKegiatan)
+    <!-- Banner Informasi Wajib Memilih Kegiatan -->
+    <div class="card card-clean p-5 text-center my-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; border-radius: 50%; background: rgba(79, 111, 246, 0.1); color: var(--lk-primary);">
+            <i class="fa-solid fa-calendar-check fs-2"></i>
         </div>
-        <!-- Tombol Cepat Hapus Terpilih di Header -->
-        <div id="quickDeleteAnomaliHeaderBtnWrapper" class="d-none">
-            <button type="button" id="btnQuickDeleteAnomaliHeader" class="btn btn-sm btn-pastel-danger shadow-sm">
-                <i class="fa-solid fa-trash-can me-1"></i> Hapus (<span class="selectedAnomaliCountText">0</span>) Anomali
-            </button>
-        </div>
+        <h5 class="fw-bold text-dark mb-2">Silakan Pilih Kegiatan Terlebih Dahulu</h5>
+        <p class="text-muted small mx-auto mb-3" style="max-width: 480px; line-height: 1.6;">
+            Pilih salah satu kegiatan survei atau opsi <strong>Tampilkan Semua Kegiatan</strong> pada dropdown filter di atas untuk melihat tabel manajemen anomali dan membuka tombol aksi (import, download respon, tambah data).
+        </p>
     </div>
-
-    @if(!empty($detailKeys))
-    <div class="dropdown">
-        <button class="btn btn-sm btn-white border shadow-xs dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-            <i class="fa-solid fa-table-columns text-primary"></i>
-            <span>Atur Kolom Detail</span>
-            <span class="badge bg-primary-subtle text-primary border rounded-pill">{{ count($selectedColumns) }}</span>
-        </button>
-        <div class="dropdown-menu dropdown-menu-end p-3 column-selector-menu">
-            <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
-                <span class="small fw-bold text-dark">Pilih Kolom Ekstrak:</span>
-                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" id="selectAllAdminCols">Pilih Semua</button>
+@else
+    <!-- Header Aksi & Atur Kolom Detail Ekstrak JSON -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <!-- Tombol Cepat Hapus Terpilih di Header -->
+            <div id="quickDeleteAnomaliHeaderBtnWrapper" class="d-none">
+                <button type="button" id="btnQuickDeleteAnomaliHeader" class="btn btn-sm btn-pastel-danger shadow-sm">
+                    <i class="fa-solid fa-trash-can me-1"></i> Hapus (<span class="selectedAnomaliCountText">0</span>) Anomali
+                </button>
             </div>
-            <form action="{{ route('anomali.index') }}" method="GET">
-                @if(request()->filled('id_kegiatan')) <input type="hidden" name="id_kegiatan" value="{{ request('id_kegiatan') }}"> @endif
-                @if(request()->filled('id_konfirmasi')) <input type="hidden" name="id_konfirmasi" value="{{ request('id_konfirmasi') }}"> @endif
-                @if(request()->filled('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
-                @if(request()->filled('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-
-                <div class="d-flex flex-column gap-2 mb-3">
-                    @foreach($detailKeys as $dk)
-                        <label class="form-check form-check-sm d-flex align-items-center gap-2 mb-0 cursor-pointer">
-                            <input class="form-check-input admin-col-checkbox" type="checkbox" name="columns[]" value="{{ $dk }}" 
-                                   {{ in_array($dk, $selectedColumns) ? 'checked' : '' }}>
-                            <span class="form-check-label small text-dark text-truncate" title="{{ $dk }}">{{ $dk }}</span>
-                        </label>
-                    @endforeach
-                </div>
-                <button type="submit" class="btn btn-sm btn-pastel-primary w-100 py-1">Terapkan Kolom</button>
-            </form>
         </div>
+
+        @if(!empty($detailKeys))
+        <div class="dropdown">
+            <button class="btn btn-sm btn-white border shadow-xs dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                <i class="fa-solid fa-table-columns text-primary"></i>
+                <span>Atur Kolom Detail</span>
+                <span class="badge bg-primary-subtle text-primary border rounded-pill">{{ count($selectedColumns) }}</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-3 column-selector-menu">
+                <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                    <span class="small fw-bold text-dark">Pilih Kolom Ekstrak:</span>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" id="selectAllAdminCols">Pilih Semua</button>
+                </div>
+                <form action="{{ route('anomali.index') }}" method="GET" id="columnSelectorForm">
+                    <input type="hidden" name="id_kegiatan" value="{{ request('id_kegiatan') }}">
+                    @if(request()->filled('id_konfirmasi')) <input type="hidden" name="id_konfirmasi" value="{{ request('id_konfirmasi') }}"> @endif
+                    @if(request()->filled('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
+                    @if(request()->filled('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        @foreach($detailKeys as $dk)
+                            <label class="form-check form-check-sm d-flex align-items-center gap-2 mb-0 cursor-pointer">
+                                <input class="form-check-input admin-col-checkbox" type="checkbox" name="columns[]" value="{{ $dk }}" 
+                                       {{ in_array($dk, $selectedColumns) ? 'checked' : '' }}>
+                                <span class="form-check-label small text-dark text-truncate" title="{{ $dk }}">{{ $dk }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-pastel-primary w-100 py-1">Terapkan Kolom</button>
+                </form>
+            </div>
+        </div>
+        @endif
     </div>
-    @endif
-</div>
 
-<!-- Modern, Lega, Pastel Anomali Table with Extracted JSON Columns (Wrap Text) -->
-<div class="table-responsive-modern">
-    <table class="table table-clean align-middle mb-0" style="table-layout: auto;">
-        <thead>
-            <tr>
-                <th style="width: 40px;" class="ps-3 text-center">
-                    <div class="form-check d-flex justify-content-center mb-0">
-                        <input type="checkbox" id="checkAllAnomali" class="form-check-input" title="Pilih Semua Anomali di Halaman Ini">
-                    </div>
-                </th>
-                <th style="width: 50px; white-space: nowrap;">No</th>
-                <th style="min-width: 160px; max-width: 220px; white-space: normal;">Kegiatan & Konfirmasi</th>
-
-                <!-- Kolom Hasil Ekstrak JSON Dinamis -->
-                @foreach($selectedColumns as $sc)
-                    <th class="text-uppercase" style="font-size: 0.73rem; letter-spacing: 0.05em; background: #f8fafc; color: #475569; min-width: 140px; max-width: 320px; white-space: normal; line-height: 1.35; word-break: break-word;">
-                        {{ $sc }}
-                    </th>
-                @endforeach
-
-                <th style="min-width: 160px; white-space: normal;">Petugas Terkait</th>
-                <th style="min-width: 140px; white-space: nowrap;">Status</th>
-                <th class="text-center pe-4" style="width: 140px; white-space: nowrap;">Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($anomalis as $index => $a)
-            @php
-                // Cari nomor HP dari detail JSON hanya jika petugas sudah terpetakan ($a->alokasi)
-                $noHp = null;
-                if ($a->alokasi && is_array($a->detail)) {
-                    foreach ($a->detail as $k => $v) {
-                        $keyLower = strtolower(str_replace([' ', '_', '-'], '', $k));
-                        if (in_array($keyLower, ['nohp', 'hp', 'telepon', 'notelp', 'telp', 'wa', 'whatsapp', 'nomorhp'])) {
-                            $cleanDigits = preg_replace('/[^0-9]/', '', (string)$v);
-                            if (strlen($cleanDigits) >= 9 && strlen($cleanDigits) <= 15) {
-                                $noHp = $cleanDigits;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if ($noHp) {
-                    if (str_starts_with($noHp, '0')) {
-                        $noHp = '62' . substr($noHp, 1);
-                    } elseif (str_starts_with($noHp, '8')) {
-                        $noHp = '62' . $noHp;
-                    }
-                }
-
-                $pesanWa = '';
-                if ($noHp) {
-                    $template = $a->kegiatan->template_wa ?? "Hai {nama_ppl}, mohon konfirmasi untuk anomali {nama_anomali} di kegiatan {nama_kegiatan}. Terima kasih.";
-                    
-                    $namaPpl = $a->alokasi->nama_ppl ?? ($a->detail['Nama PPL'] ?? ($a->detail['PPL'] ?? 'Petugas'));
-                    $namaPml = $a->alokasi->nama_pml ?? ($a->detail['Nama PML'] ?? ($a->detail['PML'] ?? 'Pengawas'));
-                    $namaAnomali = $a->konfirmasi->nama ?? 'Anomali';
-                    $namaKegiatan = $a->kegiatan->nama ?? 'Survei';
-
-                    $replacements = [
-                        '{nama_ppl}' => $namaPpl,
-                        '{nama_pml}' => $namaPml,
-                        '{nama_anomali}' => $namaAnomali,
-                        '{nama_kegiatan}' => $namaKegiatan,
-                        '{kode_kegiatan}' => $a->kegiatan->kode ?? '',
-                        '{status}' => $a->status,
-                    ];
-
-                    if (is_array($a->detail)) {
-                        foreach ($a->detail as $dk => $dv) {
-                            $replacements['{' . $dk . '}'] = (string)$dv;
-                        }
-                    }
-
-                    $pesanWa = strtr($template, $replacements);
-                    $waLink = "https://wa.me/{$noHp}?text=" . urlencode($pesanWa);
-                }
-
-                $searchKeyword = strtolower(request('search', ''));
-            @endphp
-            <tr>
-                <td class="ps-3 text-center">
-                    <div class="form-check d-flex justify-content-center mb-0">
-                        <input type="checkbox" class="form-check-input check-anomali-item" value="{{ $a->id }}">
-                    </div>
-                </td>
-                <td class="text-muted small" style="white-space: nowrap;">{{ $anomalis->firstItem() + $index }}</td>
-                <td style="white-space: normal; min-width: 160px;">
-                    <span class="badge-pastel-primary mb-1">{{ $a->kegiatan->kode ?? '-' }}</span>
-                    <div class="fw-bold text-dark fs-6" style="word-break: break-word;">{{ $a->konfirmasi->nama ?? '-' }}</div>
-                </td>
-
-                <!-- Kolom Hasil Ekstrak JSON Dinamis (Wrap Text) -->
-                @foreach($selectedColumns as $sc)
-                    @php
-                        $val = $a->detail[$sc] ?? '-';
-                        $valStr = is_array($val) ? json_encode($val) : (string)$val;
-                        $isMatched = $searchKeyword !== '' && str_contains(strtolower($valStr), $searchKeyword);
-                        
-                        // Deteksi apakah kolom ini adalah LINK atau berisi tag HTML/URL
-                        $isLinkCol = (stripos($sc, 'link') !== false || stripos($valStr, '<a ') !== false || filter_var($valStr, FILTER_VALIDATE_URL));
-                        $urlTarget = null;
-                        $linkText = 'Buka Tautan';
-                        if ($isLinkCol) {
-                            if (preg_match('/href=[\'"]([^\'"]+)[\'"]/', $valStr, $m)) {
-                                $urlTarget = $m[1];
-                                if (preg_match('/>([^<]+)<\/a>/', $valStr, $lm)) {
-                                    $linkText = trim($lm[1]);
-                                }
-                            } elseif (filter_var($valStr, FILTER_VALIDATE_URL)) {
-                                $urlTarget = $valStr;
-                                $linkText = 'Buka Tautan';
-                            }
-                        }
-                    @endphp
-                    <td class="{{ $isMatched ? 'bg-primary-subtle text-primary fw-bold' : '' }}" style="white-space: normal; min-width: 140px; max-width: 340px; vertical-align: middle;">
-                        @if($urlTarget)
-                            <a href="{{ $urlTarget }}" target="_blank" class="btn btn-sm btn-pastel-soft text-primary d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-2 fw-semibold" style="border-radius: 6px; font-size: 0.8rem;" title="Buka tautan di tab baru">
-                                <i class="fa-solid fa-arrow-up-right-from-square small"></i>
-                                <span>{{ $linkText }}</span>
-                            </a>
-                        @elseif(stripos($valStr, '<') !== false && stripos($valStr, '>') !== false)
-                            <span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">
-                                {!! $valStr !!}
-                            </span>
-                        @else
-                            <span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">
-                                {{ $valStr }}
-                            </span>
-                        @endif
-                    </td>
-                @endforeach
-
-                <td style="white-space: normal; min-width: 160px;">
-                    @if($a->alokasi)
-                        <div class="small mb-1">
-                            <div><span class="text-muted">PPL:</span> <strong class="text-dark">{{ $a->alokasi->nama_ppl }}</strong></div>
-                            <div><span class="text-muted">PML:</span> <strong class="text-dark">{{ $a->alokasi->nama_pml }}</strong></div>
+    <!-- Table Card Modern Yajra DataTables -->
+    <div class="table-responsive-modern p-3">
+        <table id="tableAnomaliYajra" class="table table-clean align-middle mb-0 w-100">
+            <thead>
+                <tr>
+                    <th style="width: 40px;" class="ps-3 text-center">
+                        <div class="form-check d-flex justify-content-center mb-0">
+                            <input type="checkbox" id="checkAllAnomali" class="form-check-input" title="Pilih Semua Anomali">
                         </div>
-                    @else
-                        <span class="badge-pastel-neutral mb-1">Belum terpetakan</span>
-                    @endif
-                </td>
-                <td style="white-space: nowrap;">
-                    @if($a->status === 'sesuai')
-                        <span class="badge-pastel-success"><i class="fa-solid fa-check-double me-1"></i> Sesuai</span>
-                    @elseif($a->status === 'tidak_sesuai')
-                        <span class="badge-pastel-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Perlu Revisi</span>
-                    @elseif($a->status === 'dikonfirmasi')
-                        <span class="badge-pastel-primary"><i class="fa-solid fa-check me-1"></i> Dikonfirmasi</span>
-                    @else
-                        <span class="badge-pastel-warning"><i class="fa-solid fa-clock me-1"></i> Menunggu</span>
-                    @endif
-                    @if($a->petugas_pengonfirmasi)
-                        <div class="small text-muted mt-1"><i class="fa-solid fa-user-check me-1"></i> {{ $a->petugas_pengonfirmasi }}</div>
-                    @endif
-                </td>
-                <td class="text-center pe-4" style="white-space: nowrap;">
-                    <div class="d-inline-flex gap-1">
-                        @if($noHp)
-                            <a href="{{ $waLink }}" target="_blank" class="btn-table-action text-success" title="Chat WhatsApp">
-                                <i class="fa-brands fa-whatsapp fs-5"></i>
-                            </a>
-                        @endif
-                        <a href="{{ route('anomali.show', $a) }}" class="btn-table-action" title="Lihat Detail & Jawaban">
-                            <i class="fa-solid fa-eye text-primary"></i>
-                        </a>
-                        <form action="{{ route('anomali.destroy', $a) }}" method="POST" onsubmit="return confirmPastelAction(this, { title: 'Hapus Data Anomali', message: 'Hapus data anomali #{{ $a->id }} ini dari sistem?' })" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-table-action text-danger" title="Hapus Anomali">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="{{ 6 + count($selectedColumns) }}" class="text-center py-5 text-muted">
-                    <div class="py-4">
-                        <i class="fa-solid fa-file-circle-check fs-1 text-primary opacity-50 mb-3 d-block"></i>
-                        <h6 class="fw-bold text-dark">Belum Ada Data Anomali</h6>
-                        <p class="small text-muted mb-0">Silakan import data dari file spreadsheet anomali.</p>
-                    </div>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
+                    </th>
+                    <th style="width: 50px;" class="text-center">No</th>
+                    <th style="min-width: 170px;">Kegiatan & Konfirmasi</th>
 
-    @if($anomalis->hasPages())
-    <div class="p-3 border-top d-flex justify-content-end bg-white">
-        {{ $anomalis->links('pagination::bootstrap-5') }}
+                    <!-- Kolom Hasil Ekstrak JSON Dinamis -->
+                    @foreach($selectedColumns as $sc)
+                        <th class="text-uppercase" style="font-size: 0.73rem; letter-spacing: 0.05em; background: #f8fafc; color: #475569; min-width: 140px; max-width: 320px; white-space: normal; line-height: 1.35; word-break: break-word;">
+                            {{ $sc }}
+                        </th>
+                    @endforeach
+
+                    <th style="min-width: 160px;">Petugas Terkait</th>
+                    <th style="min-width: 130px;">Status</th>
+                    <th class="text-center pe-3" style="width: 130px;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Diisi Server-Side oleh Yajra DataTables -->
+            </tbody>
+        </table>
     </div>
-    @endif
-</div>
+@endif
 
 <!-- Floating Action Bar saat Checklist Anomali Terpilih (Kotak, Pastel, Kalem) -->
 <div id="bulkAnomaliActionBar" class="bulk-action-bar">
@@ -512,82 +386,205 @@
 @endsection
 
 @push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
+    <!-- jQuery & DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
         // Atur Kolom Checkbox All
-        const selectAllBtn = document.getElementById('selectAllAdminCols');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const checkboxes = document.querySelectorAll('.admin-col-checkbox');
-                const allChecked = Array.from(checkboxes).every(c => c.checked);
-                checkboxes.forEach(c => c.checked = !allChecked);
-                this.textContent = allChecked ? 'Pilih Semua' : 'Batal Pilih Semua';
-            });
+        $('#selectAllAdminCols').on('click', function(e) {
+            e.preventDefault();
+            const checkboxes = $('.admin-col-checkbox');
+            const allChecked = checkboxes.length === checkboxes.filter(':checked').length;
+            checkboxes.prop('checked', !allChecked);
+            $(this).text(allChecked ? 'Pilih Semua' : 'Batal Pilih Semua');
+        });
+
+        // Update indikator download respon excel
+        function updateDownloadBadge() {
+            const keg = $('#filter_kegiatan').val();
+            const konf = $('#filter_konfirmasi').val();
+            const badge = $('#badgeInfoDownload');
+            if (keg && konf) {
+                badge.removeClass('badge-pastel-warning').addClass('badge-pastel-success');
+                badge.html('<i class="fa-solid fa-circle-check me-1"></i> Siap Diunduh: Detail dipecah per kolom kegiatan');
+            } else {
+                badge.removeClass('badge-pastel-success').addClass('badge-pastel-warning');
+                badge.html('<i class="fa-solid fa-circle-info me-1"></i> Pilih Kegiatan & Template untuk unduh Excel');
+            }
         }
+        updateDownloadBadge();
 
         // Checklist State & Management untuk Anomali
         let selectedAnomaliIds = new Set();
         let currentRandomCode = '';
 
-        const checkAllAnomali = document.getElementById('checkAllAnomali');
-        const anomaliCheckboxes = document.querySelectorAll('.check-anomali-item');
-        const bulkActionBar = document.getElementById('bulkAnomaliActionBar');
-        const headerBtnWrapper = document.getElementById('quickDeleteAnomaliHeaderBtnWrapper');
-        const countTexts = document.querySelectorAll('.selectedAnomaliCountText');
-
         function updateAnomaliBulkBar() {
             const count = selectedAnomaliIds.size;
-            countTexts.forEach(el => el.textContent = count);
+            $('.selectedAnomaliCountText').text(count);
 
             if (count > 0) {
-                bulkActionBar.classList.add('show');
-                if (headerBtnWrapper) headerBtnWrapper.classList.remove('d-none');
+                $('#bulkAnomaliActionBar').addClass('show');
+                $('#quickDeleteAnomaliHeaderBtnWrapper').removeClass('d-none');
             } else {
-                bulkActionBar.classList.remove('show');
-                if (headerBtnWrapper) headerBtnWrapper.classList.add('d-none');
+                $('#bulkAnomaliActionBar').removeClass('show');
+                $('#quickDeleteAnomaliHeaderBtnWrapper').addClass('d-none');
             }
         }
 
-        if (checkAllAnomali) {
-            checkAllAnomali.addEventListener('change', function() {
-                const isChecked = this.checked;
-                anomaliCheckboxes.forEach(cb => {
-                    cb.checked = isChecked;
-                    if (isChecked) {
-                        selectedAnomaliIds.add(cb.value);
-                    } else {
-                        selectedAnomaliIds.delete(cb.value);
-                    }
-                });
-                updateAnomaliBulkBar();
+        function syncCheckboxes() {
+            $('.check-anomali-item').each(function() {
+                const id = $(this).val();
+                $(this).prop('checked', selectedAnomaliIds.has(id));
             });
+            const totalOnPage = $('.check-anomali-item').length;
+            const checkedOnPage = $('.check-anomali-item:checked').length;
+            $('#checkAllAnomali').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
         }
 
-        anomaliCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                if (this.checked) {
-                    selectedAnomaliIds.add(this.value);
-                } else {
-                    selectedAnomaliIds.delete(this.value);
-                    if (checkAllAnomali) checkAllAnomali.checked = false;
+        // Inisialisasi DataTable Yajra dengan Server-Side & Atur Halaman (lengthMenu)
+        const columnsConfig = [
+            { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center ps-3' },
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted small' },
+            { data: 'kegiatan_info', name: 'kegiatan_info', orderable: false, searchable: false }
+        ];
+
+        // Tambahkan kolom ekstrak detail
+        @foreach($selectedColumns as $sc)
+            columnsConfig.push({
+                data: '{{ "detail_" . md5($sc) }}',
+                name: '{{ "detail_" . md5($sc) }}',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    return '<span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">' + (data || '-') + '</span>';
                 }
-                const allSelected = Array.from(anomaliCheckboxes).every(c => c.checked);
-                if (checkAllAnomali) checkAllAnomali.checked = allSelected;
-                updateAnomaliBulkBar();
             });
+        @endforeach
+
+        columnsConfig.push(
+            { data: 'petugas_info', name: 'petugas_info', orderable: false, searchable: false },
+            { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+            { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center pe-3' }
+        );
+
+        const table = $('#tableAnomaliYajra').DataTable({
+            processing: true,
+            serverSide: true,
+            lengthMenu: [[10, 15, 25, 50, 100, 250], [10, 15, 25, 50, 100, 250]],
+            pageLength: 15,
+            stateSave: true, // Simpan halaman dan jumlah baris per halaman
+            ajax: {
+                url: "{{ route('anomali.index') }}",
+                data: function(d) {
+                    d.id_kegiatan = $('#filter_kegiatan').val();
+                    d.id_konfirmasi = $('#filter_konfirmasi').val();
+                    d.status = $('#filter_status').val();
+                    d.custom_search = $('#filter_custom_search').val();
+                }
+            },
+            columns: columnsConfig,
+            order: [], // Default urutan server side latest id
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Cari cepat di tabel...",
+                lengthMenu: "Tampilkan _MENU_ data per halaman",
+                info: "Menampilkan _START_ s/d _END_ dari _TOTAL_ data anomali",
+                infoEmpty: "Menampilkan 0 data",
+                infoFiltered: "(disaring dari _MAX_ total anomali)",
+                zeroRecords: "<div class='py-4 text-center text-muted'><i class='fa-solid fa-file-circle-check fs-2 text-primary opacity-50 mb-2 d-block'></i>Tidak ditemukan data anomali yang sesuai</div>",
+                processing: '<div class="py-2 text-primary"><i class="fa-solid fa-spinner fa-spin me-2"></i>Memuat data anomali...</div>',
+                paginate: {
+                    first: '<i class="fa-solid fa-angles-left"></i>',
+                    last: '<i class="fa-solid fa-angles-right"></i>',
+                    next: '<i class="fa-solid fa-angle-right"></i>',
+                    previous: '<i class="fa-solid fa-angle-left"></i>'
+                }
+            },
+            drawCallback: function() {
+                syncCheckboxes();
+            }
+        });
+
+        // Filter Form Submit
+        $('#filterAnomaliForm').on('submit', function(e) {
+            e.preventDefault();
+            const keg = $('#filter_kegiatan').val();
+            if (!keg) {
+                alert('Silakan pilih kegiatan terlebih dahulu.');
+                return;
+            }
+            // Arahkan halaman dengan parameter kegiatan yang dipilih agar seluruh layout tersinkronisasi
+            const params = new URLSearchParams({
+                id_kegiatan: keg,
+                id_konfirmasi: $('#filter_konfirmasi').val() || '',
+                status: $('#filter_status').val() || '',
+                search: $('#filter_custom_search').val() || ''
+            });
+            window.location.href = "{{ route('anomali.index') }}?" + params.toString();
+        });
+
+        // Trigger filter saat dropdown kegiatan berubah
+        $('#filter_kegiatan').on('change', function() {
+            const keg = $(this).val();
+            if (keg) {
+                window.location.href = "{{ route('anomali.index') }}?id_kegiatan=" + encodeURIComponent(keg);
+            } else {
+                window.location.href = "{{ route('anomali.index') }}";
+            }
+        });
+
+        // Trigger filter saat dropdown konfirmasi atau status berubah
+        $('#filter_konfirmasi, #filter_status').on('change', function() {
+            updateDownloadBadge();
+            if (typeof table !== 'undefined') table.draw();
+        });
+
+        // Reset Filter
+        $('#btnResetFilter').on('click', function() {
+            window.location.href = "{{ route('anomali.index') }}";
+        });
+
+        // Checklist All di Halaman Aktif
+        $('#checkAllAnomali').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            $('.check-anomali-item').each(function() {
+                const id = $(this).val();
+                $(this).prop('checked', isChecked);
+                if (isChecked) {
+                    selectedAnomaliIds.add(id);
+                } else {
+                    selectedAnomaliIds.delete(id);
+                }
+            });
+            updateAnomaliBulkBar();
+        });
+
+        // Checklist Single Item
+        $(document).on('change', '.check-anomali-item', function() {
+            const id = $(this).val();
+            if ($(this).is(':checked')) {
+                selectedAnomaliIds.add(id);
+            } else {
+                selectedAnomaliIds.delete(id);
+                $('#checkAllAnomali').prop('checked', false);
+            }
+            const totalOnPage = $('.check-anomali-item').length;
+            const checkedOnPage = $('.check-anomali-item:checked').length;
+            $('#checkAllAnomali').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+            updateAnomaliBulkBar();
         });
 
         // Batal Checklist
-        const btnCancel = document.getElementById('btnCancelAnomaliChecklist');
-        if (btnCancel) {
-            btnCancel.addEventListener('click', function() {
-                selectedAnomaliIds.clear();
-                anomaliCheckboxes.forEach(c => c.checked = false);
-                if (checkAllAnomali) checkAllAnomali.checked = false;
-                updateAnomaliBulkBar();
-            });
-        }
+        $('#btnCancelAnomaliChecklist').on('click', function() {
+            selectedAnomaliIds.clear();
+            $('.check-anomali-item').prop('checked', false);
+            $('#checkAllAnomali').prop('checked', false);
+            updateAnomaliBulkBar();
+        });
 
         // Generate Random Code (6 digit Alfanumerik Bebas Ambigu)
         function generateRandomCode(length = 6) {
@@ -604,12 +601,13 @@
             if (selectedAnomaliIds.size === 0) return;
 
             currentRandomCode = generateRandomCode(6);
-            document.getElementById('boxRandomCode').textContent = currentRandomCode;
-            document.getElementById('textModalAnomaliCount').textContent = selectedAnomaliIds.size;
+            $('#boxRandomCode').text(currentRandomCode);
+            $('#textModalAnomaliCount').text(selectedAnomaliIds.size);
             
-            const inputField = document.getElementById('inputConfirmCode');
-            inputField.value = '';
-            document.getElementById('codeFeedbackError').classList.add('d-none');
+            const inputField = $('#inputConfirmCode');
+            inputField.val('');
+            $('#codeFeedbackError').addClass('d-none');
+            inputField.removeClass('is-invalid');
 
             const modalEl = document.getElementById('modalConfirmCodeAnomali');
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -618,36 +616,27 @@
             setTimeout(() => inputField.focus(), 300);
         }
 
-        const btnExecute = document.getElementById('btnExecuteBulkDeleteAnomali');
-        if (btnExecute) {
-            btnExecute.addEventListener('click', promptDeleteWithRandomCode);
-        }
-
-        const btnHeader = document.getElementById('btnQuickDeleteAnomaliHeader');
-        if (btnHeader) {
-            btnHeader.addEventListener('click', promptDeleteWithRandomCode);
-        }
+        $('#btnExecuteBulkDeleteAnomali, #btnQuickDeleteAnomaliHeader').on('click', promptDeleteWithRandomCode);
 
         // Eksekusi Submit Penghapusan dengan Verifikasi Kode
-        const btnSubmitDelete = document.getElementById('btnSubmitDeleteWithCode');
-        const inputConfirmCode = document.getElementById('inputConfirmCode');
-
         function doSubmitDelete() {
-            const userInput = inputConfirmCode.value.trim().toUpperCase();
+            const inputConfirmCode = $('#inputConfirmCode');
+            const btnSubmitDelete = $('#btnSubmitDeleteWithCode');
+            const userInput = inputConfirmCode.val().trim().toUpperCase();
+
             if (userInput !== currentRandomCode) {
-                document.getElementById('codeFeedbackError').classList.remove('d-none');
-                inputConfirmCode.classList.add('is-invalid');
+                $('#codeFeedbackError').removeClass('d-none');
+                inputConfirmCode.addClass('is-invalid');
                 inputConfirmCode.focus();
                 return;
             }
 
-            document.getElementById('codeFeedbackError').classList.add('d-none');
-            inputConfirmCode.classList.remove('is-invalid');
+            $('#codeFeedbackError').addClass('d-none');
+            inputConfirmCode.removeClass('is-invalid');
 
-            btnSubmitDelete.disabled = true;
-            btnSubmitDelete.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menghapus...';
+            btnSubmitDelete.prop('disabled', true);
+            btnSubmitDelete.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menghapus...');
 
-            // Kirim request penghapusan via Ajax jQuery / Fetch standar dengan proteksi error message
             fetch("{{ route('anomali.bulk-delete') }}", {
                 method: "POST",
                 headers: {
@@ -665,13 +654,8 @@
             })
             .then(async res => {
                 let json = {};
-                try {
-                    json = await res.json();
-                } catch(e) {}
-
-                if (!res.ok) {
-                    throw new Error(json.message || 'Terjadi kesalahan (' + res.status + ') saat menghapus data.');
-                }
+                try { json = await res.json(); } catch(e) {}
+                if (!res.ok) throw new Error(json.message || 'Terjadi kesalahan (' + res.status + ') saat menghapus data.');
                 return json;
             })
             .then(data => {
@@ -679,34 +663,32 @@
                     const modalEl = document.getElementById('modalConfirmCodeAnomali');
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     if (modal) modal.hide();
-                    location.reload();
+                    selectedAnomaliIds.clear();
+                    updateAnomaliBulkBar();
+                    table.draw(false); // Refresh data tanpa reload halaman
                 } else {
                     alert(data.message || 'Gagal menghapus data anomali.');
-                    btnSubmitDelete.disabled = false;
-                    btnSubmitDelete.innerHTML = '<i class="fa-solid fa-trash-can me-1"></i> Verifikasi & Hapus';
                 }
             })
             .catch(err => {
                 alert(err.message || 'Terjadi kesalahan jaringan.');
-                btnSubmitDelete.disabled = false;
-                btnSubmitDelete.innerHTML = '<i class="fa-solid fa-trash-can me-1"></i> Verifikasi & Hapus';
+            })
+            .finally(() => {
+                btnSubmitDelete.prop('disabled', false);
+                btnSubmitDelete.html('<i class="fa-solid fa-trash-can me-1"></i> Verifikasi & Hapus');
             });
         }
 
-        if (btnSubmitDelete) {
-            btnSubmitDelete.addEventListener('click', doSubmitDelete);
-        }
+        $('#btnSubmitDeleteWithCode').on('click', doSubmitDelete);
 
-        if (inputConfirmCode) {
-            inputConfirmCode.addEventListener('keyup', function(e) {
-                if (e.key === 'Enter') {
-                    doSubmitDelete();
-                } else {
-                    document.getElementById('codeFeedbackError').classList.add('d-none');
-                    this.classList.remove('is-invalid');
-                }
-            });
-        }
+        $('#inputConfirmCode').on('keyup', function(e) {
+            if (e.key === 'Enter') {
+                doSubmitDelete();
+            } else {
+                $('#codeFeedbackError').addClass('d-none');
+                $(this).removeClass('is-invalid');
+            }
+        });
     });
-</script>
+    </script>
 @endpush
