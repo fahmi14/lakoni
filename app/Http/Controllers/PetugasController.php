@@ -187,11 +187,21 @@ class PetugasController extends Controller
             $detailKeys = ($sampleAnomali && is_array($sampleAnomali->detail)) ? array_keys($sampleAnomali->detail) : [];
         }
 
-        // Kolom yang dipilih untuk ditampilkan (default: jika ada di request atau ambil 4-5 pertama)
-        $selectedColumns = $request->input('columns', []);
+        // Kolom yang dipilih: Prioritaskan dari request, jika tidak ada cek session, jika tidak ada default 4 kolom pertama
+        $sessionKey = 'petugas_selected_columns_' . $kegiatanId;
+        if ($request->has('columns')) {
+            $selectedColumns = $request->input('columns', []);
+            session([$sessionKey => $selectedColumns]);
+        } elseif (session()->has($sessionKey)) {
+            $selectedColumns = session($sessionKey, []);
+        } else {
+            $selectedColumns = [];
+        }
+
         if (empty($selectedColumns) && !empty($detailKeys)) {
             // Default tampilkan hingga 4 kolom pertama
             $selectedColumns = array_slice($detailKeys, 0, 4);
+            session([$sessionKey => $selectedColumns]);
         }
 
         $anomalis = $query->latest('id')->paginate(15)->withQueryString();

@@ -80,10 +80,20 @@ class AnomaliController extends Controller
             $detailKeys = ($sampleAnomali && is_array($sampleAnomali->detail)) ? array_keys($sampleAnomali->detail) : [];
         }
 
-        // Kolom terpilih (default: 4-5 kolom pertama jika belum diset)
-        $selectedColumns = $request->input('columns', []);
+        // Kolom terpilih: Prioritaskan dari request, jika tidak ada cek session, jika tidak ada gunakan default 5 kolom pertama
+        $sessionKey = 'anomali_selected_columns_' . ($request->input('id_kegiatan', 'all'));
+        if ($request->has('columns')) {
+            $selectedColumns = $request->input('columns', []);
+            session([$sessionKey => $selectedColumns]);
+        } elseif (session()->has($sessionKey)) {
+            $selectedColumns = session($sessionKey, []);
+        } else {
+            $selectedColumns = [];
+        }
+
         if (empty($selectedColumns) && !empty($detailKeys)) {
             $selectedColumns = array_slice($detailKeys, 0, 5);
+            session([$sessionKey => $selectedColumns]);
         }
 
         return view('anomali.index', compact('anomalis', 'kegiatans', 'konfirmasis', 'detailKeys', 'selectedColumns'));
