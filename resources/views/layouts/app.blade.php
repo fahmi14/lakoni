@@ -474,6 +474,17 @@
             }
         }
 
+        /* Modal Backdrop & Z-Index Safety */
+        #modalPastelConfirm {
+            z-index: 1075 !important;
+        }
+        #modalPastelConfirm .modal-dialog {
+            z-index: 1080 !important;
+        }
+        .modal-backdrop {
+            z-index: 1060;
+        }
+
         /* Page Content Entry Motion */
         .page-motion-wrapper {
             animation: pageFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;

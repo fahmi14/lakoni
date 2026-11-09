@@ -200,7 +200,15 @@
                                     <i class="fa-regular fa-circle-dot text-primary me-2" style="font-size: 0.65rem;"></i>{{ $kolom }}
                                 </td>
                                 <td class="pe-4 text-dark fw-semibold fs-6">
-                                    {{ $nilai }}
+                                    @php
+                                        $valStr = is_array($nilai) ? json_encode($nilai) : (string)$nilai;
+                                        $hasHtml = (stripos($valStr, '<a ') !== false || stripos($valStr, '<button') !== false || stripos($valStr, '<span') !== false);
+                                    @endphp
+                                    @if($hasHtml)
+                                        {!! $valStr !!}
+                                    @else
+                                        {{ $valStr }}
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach

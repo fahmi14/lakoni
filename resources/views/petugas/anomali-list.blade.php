@@ -274,10 +274,15 @@
                             $val = $a->detail[$sc] ?? '-';
                             $valStr = is_array($val) ? json_encode($val) : (string)$val;
                             $isMatched = $searchKeyword !== '' && str_contains(strtolower($valStr), $searchKeyword);
+                            $hasHtml = (stripos($valStr, '<a ') !== false || stripos($valStr, '<button') !== false || stripos($valStr, '<span') !== false);
                         @endphp
-                        <td class="{{ $isMatched ? 'bg-primary-subtle text-primary fw-bold' : '' }}" style="white-space: normal; min-width: 140px; max-width: 320px; vertical-align: middle;">
+                        <td class="{{ $isMatched ? 'bg-primary-subtle text-primary fw-bold' : '' }}" style="white-space: normal; min-width: 140px; max-width: 340px; vertical-align: middle;">
                             <span class="small text-dark" style="word-break: break-word; line-height: 1.45; display: block;">
-                                {{ $valStr }}
+                                @if($hasHtml)
+                                    {!! $valStr !!}
+                                @else
+                                    {{ $valStr }}
+                                @endif
                             </span>
                         </td>
                     @endforeach

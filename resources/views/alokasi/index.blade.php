@@ -176,13 +176,13 @@
 <!-- Modal Hapus Masal Alokasi by Kegiatan & Jenis Wilayah (Desain Pastel & Elegan) -->
 <div class="modal fade" id="modalBulkDeleteAlokasi" tabindex="-1" aria-labelledby="modalBulkDeleteLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--lk-radius); overflow: hidden; animation: popUpModal 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);">
-            <form action="{{ route('alokasi.bulk-delete') }}" method="POST" onsubmit="return confirmPastelAction(this, { title: 'Konfirmasi Hapus Masal Alokasi', message: 'Seluruh alokasi petugas pada kegiatan yang dipilih akan dihapus permanen. Lanjutkan?', btnText: 'Ya, Hapus Masal' })">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 4px; overflow: hidden; animation: popUpModal 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); background: #ffffff;">
+            <form action="{{ route('alokasi.bulk-delete') }}" method="POST">
                 @csrf
                 <div class="p-4">
                     <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                         <div class="d-flex align-items-center gap-2">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: #fff1f2; color: #e11d48;">
+                            <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 4px; background: #fff1f2; color: #e11d48;">
                                 <i class="fa-solid fa-trash-can"></i>
                             </div>
                             <div>
@@ -199,7 +199,7 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Kegiatan <span class="text-danger">*</span></label>
-                        <select name="id_kegiatan" class="form-select" required>
+                        <select name="id_kegiatan" class="form-select" style="border-radius: 4px;" required>
                             <option value="">-- Pilih Kegiatan --</option>
                             @foreach($kegiatans as $keg)
                                 <option value="{{ $keg->id }}" {{ request('id_kegiatan') == $keg->id ? 'selected' : '' }}>
@@ -211,7 +211,7 @@
 
                     <div class="mb-2">
                         <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Jenis Wilayah</label>
-                        <select name="tipe_wilayah" class="form-select">
+                        <select name="tipe_wilayah" class="form-select" style="border-radius: 4px;">
                             <option value="all">Semua Jenis Wilayah pada Kegiatan Ini</option>
                             @foreach($tipeWilayahs as $tw)
                                 @if($tw)
@@ -224,8 +224,8 @@
                 </div>
 
                 <div class="modal-footer bg-light border-top px-4 py-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-light border px-3 rounded-pill text-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger px-4 rounded-pill fw-semibold shadow-xs">
+                    <button type="button" class="btn btn-light border px-3 text-secondary fw-semibold" style="border-radius: 4px;" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold shadow-xs" style="border-radius: 4px;">
                         <i class="fa-solid fa-trash-can me-1"></i> Hapus Sekarang
                     </button>
                 </div>
