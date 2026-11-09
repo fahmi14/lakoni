@@ -99,6 +99,12 @@ class KonfirmasiController extends Controller
 
     public function destroy(Konfirmasi $konfirmasi)
     {
+        $jumlahAnomali = $konfirmasi->anomali()->count();
+        if ($jumlahAnomali > 0) {
+            return redirect()->route('konfirmasi.index')
+                ->with('error', "Template \"{$konfirmasi->nama}\" tidak dapat dihapus karena masih digunakan oleh {$jumlahAnomali} data anomali. Hapus atau pindahkan anomali terkait terlebih dahulu.");
+        }
+
         $konfirmasi->delete();
         return redirect()->route('konfirmasi.index')->with('success', 'Template konfirmasi berhasil dihapus.');
     }

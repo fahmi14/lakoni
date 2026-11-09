@@ -63,7 +63,7 @@
                         <a href="{{ route('konfirmasi.edit', $k) }}" class="btn-table-action" title="Edit Template">
                             <i class="fa-solid fa-pen-to-square text-primary"></i>
                         </a>
-                        <form action="{{ route('konfirmasi.destroy', $k) }}" method="POST" onsubmit="return confirm('Hapus template ini?')" class="d-inline">
+                        <form action="{{ route('konfirmasi.destroy', $k) }}" method="POST" onsubmit="return confirmPastelAction(this, { title: 'Hapus Template Konfirmasi', message: 'Hapus template konfirmasi {{ addslashes($k->nama) }}? Template ini mungkin terhubung dengan data anomali.' })" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn-table-action text-danger" title="Hapus Template">

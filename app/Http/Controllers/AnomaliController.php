@@ -7,6 +7,7 @@ use App\Models\Kegiatan;
 use App\Models\Konfirmasi;
 use App\Models\Alokasi;
 use App\Models\Wilayah;
+use App\Services\AnomaliSyncService;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -20,7 +21,7 @@ class AnomaliController extends Controller
         $kegiatans = Kegiatan::orderBy('nama')->get();
         $konfirmasis = Konfirmasi::orderBy('nama')->get();
 
-        $query = Anomali::with(['kegiatan', 'konfirmasi', 'alokasi']);
+        $query = Anomali::with(['kegiatan', 'konfirmasi', 'alokasi.wilayah']);
 
         if ($request->filled('id_kegiatan')) {
             $query->where('id_kegiatan', $request->id_kegiatan);
@@ -29,12 +30,63 @@ class AnomaliController extends Controller
             $query->where('id_konfirmasi', $request->id_konfirmasi);
         }
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'belum') {
+                $query->where(function ($q) {
+                    $q->where('status', 'belum')->orWhereNull('status');
+                });
+            } elseif ($request->status === 'sudah') {
+                $query->whereNotIn('status', ['belum'])->whereNotNull('status');
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
-        $anomalis = $query->latest()->paginate(15)->withQueryString();
+        // Custom Search: Mencari di semua variabel JSON detail, kolom, teks konfirmasi, dan nama kegiatan
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('detail', 'like', "%{$search}%")
+                  ->orWhere('petugas_pengonfirmasi', 'like', "%{$search}%")
+                  ->orWhereHas('kegiatan', function ($kq) use ($search) {
+                      $kq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('konfirmasi', function ($kq) use ($search) {
+                      $kq->where('nama', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('alokasi', function ($aq) use ($search) {
+                      $aq->where('nama_ppl', 'like', "%{$search}%")
+                         ->orWhere('nama_pml', 'like', "%{$search}%")
+                         ->orWhereHas('wilayah', function ($wq) use ($search) {
+                             $wq->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%");
+                         });
+                  });
+            });
+        }
 
-        return view('anomali.index', compact('anomalis', 'kegiatans', 'konfirmasis'));
+        $anomalis = $query->latest('id')->paginate(15)->withQueryString();
+
+        // Ambil daftar detailKeys untuk ekstraksi kolom JSON
+        $detailKeys = [];
+        if ($request->filled('id_kegiatan')) {
+            $selectedKegiatan = $kegiatans->firstWhere('id', $request->id_kegiatan);
+            if ($selectedKegiatan && !empty($selectedKegiatan->kolom) && is_array($selectedKegiatan->kolom)) {
+                $detailKeys = $selectedKegiatan->kolom;
+            }
+        }
+
+        if (empty($detailKeys)) {
+            $sampleAnomaliQuery = clone $query;
+            $sampleAnomali = $sampleAnomaliQuery->first();
+            $detailKeys = ($sampleAnomali && is_array($sampleAnomali->detail)) ? array_keys($sampleAnomali->detail) : [];
+        }
+
+        // Kolom terpilih (default: 4-5 kolom pertama jika belum diset)
+        $selectedColumns = $request->input('columns', []);
+        if (empty($selectedColumns) && !empty($detailKeys)) {
+            $selectedColumns = array_slice($detailKeys, 0, 5);
+        }
+
+        return view('anomali.index', compact('anomalis', 'kegiatans', 'konfirmasis', 'detailKeys', 'selectedColumns'));
     }
 
     public function create()
@@ -80,6 +132,44 @@ class AnomaliController extends Controller
     {
         $anomali->delete();
         return back()->with('success', 'Data anomali berhasil dihapus.');
+    }
+
+    /**
+     * Hapus Checklist Masal (Bulk Delete) Anomali Terpilih dengan Validasi Kode Konfirmasi
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:anomali,id',
+            'confirm_code' => 'required|string',
+            'expected_code' => 'required|string',
+        ]);
+
+        if (trim(strtoupper($request->confirm_code)) !== trim(strtoupper($request->expected_code))) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kode konfirmasi tidak cocok. Penghapusan anomali dibatalkan demi keamanan data.',
+                ], 422);
+            }
+            return back()->with('error', 'Kode konfirmasi tidak cocok. Penghapusan anomali dibatalkan.');
+        }
+
+        $ids = $request->ids;
+        $count = count($ids);
+
+        Anomali::whereIn('id', $ids)->delete();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil menghapus {$count} data temuan anomali terpilih.",
+            ]);
+        }
+
+        return redirect()->route('anomali.index', $request->query())
+            ->with('success', "Berhasil menghapus {$count} data temuan anomali terpilih.");
     }
 
     /**
@@ -185,16 +275,20 @@ class AnomaliController extends Controller
             }
         }
 
-        // 2. Kumpulkan pertanyaan dari template konfirmasi terpilih
+        // 2. Kumpulkan pertanyaan dari template konfirmasi terpilih (dengan prefix agar tidak bentrok dengan kolom detail)
         $pertanyaanHeaders = [];
+        $pertanyaanKeysMap = [];
         if (is_array($konfirmasi->pertanyaan)) {
             foreach ($konfirmasi->pertanyaan as $qIdx => $q) {
                 $qTeks = $q['teks'] ?? "Pertanyaan #".($qIdx + 1);
-                $pertanyaanHeaders[] = $qTeks;
+                $headerLabel = "[Konfirmasi] " . $qTeks;
+                $pertanyaanHeaders[] = $headerLabel;
+                $pertanyaanKeysMap[$headerLabel] = $qIdx;
             }
         }
         if (empty($pertanyaanHeaders)) {
-            $pertanyaanHeaders = ['Hasil Jawaban Konfirmasi'];
+            $pertanyaanHeaders = ['[Konfirmasi] Hasil Jawaban'];
+            $pertanyaanKeysMap['[Konfirmasi] Hasil Jawaban'] = 0;
         }
 
         // 3. Susun Header Spreadsheet
@@ -246,18 +340,19 @@ class AnomaliController extends Controller
             $hasilKonf = is_array($a->hasil_konfirmasi) ? $a->hasil_konfirmasi : [];
             $qList = $konfirmasi->pertanyaan ?? [];
 
-            $qAnswerMap = [];
-            foreach ($qList as $qIdx => $qItem) {
-                $qTeks = $qItem['teks'] ?? "Pertanyaan #".($qIdx + 1);
-                $ansVal = $hasilKonf[$qIdx] ?? '';
-                if ($ansVal !== '' && isset($qItem['tipe']) && $qItem['tipe'] === 'pilihan') {
-                    $ansVal = $qItem['opsi'][$ansVal] ?? $ansVal;
-                }
-                $qAnswerMap[$qTeks] = $ansVal;
-            }
-
             foreach ($pertanyaanHeaders as $pH) {
-                $row[] = isset($qAnswerMap[$pH]) ? (string)$qAnswerMap[$pH] : '';
+                $qIdx = $pertanyaanKeysMap[$pH] ?? null;
+                $valAns = '';
+                if ($qIdx !== null && isset($hasilKonf[$qIdx])) {
+                    $rawVal = $hasilKonf[$qIdx];
+                    $qItem = $qList[$qIdx] ?? null;
+                    if ($qItem && isset($qItem['tipe']) && $qItem['tipe'] === 'pilihan' && is_numeric($rawVal)) {
+                        $valAns = $qItem['opsi'][$rawVal] ?? $rawVal;
+                    } else {
+                        $valAns = (string)$rawVal;
+                    }
+                }
+                $row[] = $valAns;
             }
 
             $rowsData[] = $row;
@@ -340,6 +435,63 @@ class AnomaliController extends Controller
     }
 
     /**
+     * Membaca baris-baris file Excel/CSV dengan penanganan khusus quote CSV ganda/tidak standar
+     */
+    protected function parseUploadedFileRows(string $filePath): array
+    {
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+        // Jika CSV atau TXT, gunakan pembaca CSV robust yang menormalkan double-quotes pembungkus
+        if (in_array($ext, ['csv', 'txt'])) {
+            $rawContent = file_get_contents($filePath);
+            if ($rawContent === false || trim($rawContent) === '') {
+                return [];
+            }
+
+            // Normalisasi line ending
+            $rawContent = str_replace(["\r\n", "\r"], "\n", $rawContent);
+            $lines = explode("\n", $rawContent);
+            $rows = [];
+
+            // Deteksi delimiter (; atau ,)
+            $firstLine = $lines[0] ?? '';
+            $delimiter = (substr_count($firstLine, ';') > substr_count($firstLine, ',')) ? ';' : ',';
+
+            foreach ($lines as $line) {
+                if (trim($line) === '') continue;
+
+                // Normalisasi double double-quotes di awal/akhir kolom:
+                // misal: ""Status perkotaan, tetapi..."" -> "Status perkotaan, tetapi..."
+                // dan """"Link"""" -> "Link"
+                $cleanedLine = preg_replace('/(?<=^|' . preg_quote($delimiter, '/') . ')""(.*?)""(?=' . preg_quote($delimiter, '/') . '|$)/s', '"$1"', $line);
+
+                $parsedRow = str_getcsv($cleanedLine, $delimiter, '"');
+
+                // Bersihkan quote tersisa dan unescape double quotes internal
+                $parsedRow = array_map(function ($val) {
+                    $v = trim((string)$val);
+                    $v = str_replace('""""', '"', $v);
+                    $v = str_replace('""', '"', $v);
+                    return $v;
+                }, $parsedRow);
+
+                $rows[] = $parsedRow;
+            }
+
+            return $rows;
+        }
+
+        // Jika XLSX atau XLS, gunakan PhpSpreadsheet IOFactory
+        try {
+            $spreadsheet = IOFactory::load($filePath);
+            $sheet = $spreadsheet->getActiveSheet();
+            return $sheet ? $sheet->toArray() : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * Langkah 2: Upload Multi-file & Tampilkan Preview Sheet / Tabs & Kolom
      */
     public function previewImport(Request $request)
@@ -364,11 +516,10 @@ class AnomaliController extends Controller
             $filePaths[] = $path;
 
             $fullPath = Storage::path($path);
-            $spreadsheet = IOFactory::load($fullPath);
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
 
-            foreach ($spreadsheet->getSheetNames() as $sheetIndex => $sheetName) {
-                $sheet = $spreadsheet->getSheet($sheetIndex);
-                $rows = $sheet->toArray();
+            if (in_array($ext, ['csv', 'txt'])) {
+                $rows = $this->parseUploadedFileRows($fullPath);
                 if (empty($rows)) continue;
 
                 $headers = array_filter(array_map('trim', (array)$rows[0]));
@@ -380,12 +531,42 @@ class AnomaliController extends Controller
 
                 $sheetsData[] = [
                     'fileName' => $origName,
-                    'name' => $sheetName,
+                    'name' => 'Data CSV',
                     'headers' => $headers,
                     'previewRows' => $previewRows,
                     'totalRows' => count($rows) - 1,
                 ];
+            } else {
+                try {
+                    $spreadsheet = IOFactory::load($fullPath);
+                    foreach ($spreadsheet->getSheetNames() as $sheetIndex => $sheetName) {
+                        $sheet = $spreadsheet->getSheet($sheetIndex);
+                        $rows = $sheet->toArray();
+                        if (empty($rows)) continue;
+
+                        $headers = array_filter(array_map('trim', (array)$rows[0]));
+                        $previewRows = array_slice($rows, 1, 5);
+
+                        foreach ($headers as $h) {
+                            $allHeadersSet[$h] = true;
+                        }
+
+                        $sheetsData[] = [
+                            'fileName' => $origName,
+                            'name' => $sheetName,
+                            'headers' => $headers,
+                            'previewRows' => $previewRows,
+                            'totalRows' => count($rows) - 1,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    continue; // Lewati file excel yang korup / tidak dapat dibaca
+                }
             }
+        }
+
+        if (empty($sheetsData)) {
+            return back()->with('error', 'Semua file yang diunggah tidak memiliki data yang dapat dibaca atau formatnya tidak valid.');
         }
 
         $allHeaders = array_keys($allHeadersSet);
@@ -426,10 +607,23 @@ class AnomaliController extends Controller
             $filePath = Storage::path($storedPath);
             if (!file_exists($filePath)) continue;
 
-            $spreadsheet = IOFactory::load($filePath);
+            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $sheetGroups = [];
 
-            foreach ($spreadsheet->getAllSheets() as $sheet) {
-                $rows = $sheet->toArray();
+            if (in_array($ext, ['csv', 'txt'])) {
+                $sheetGroups[] = $this->parseUploadedFileRows($filePath);
+            } else {
+                try {
+                    $spreadsheet = IOFactory::load($filePath);
+                    foreach ($spreadsheet->getAllSheets() as $sheet) {
+                        $sheetGroups[] = $sheet->toArray();
+                    }
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+
+            foreach ($sheetGroups as $rows) {
                 if (count($rows) < 2) continue;
 
                 $headers = $rows[0];
@@ -520,5 +714,17 @@ class AnomaliController extends Controller
 
         return redirect()->route('anomali.index', ['id_kegiatan' => $kegiatan->id, 'id_konfirmasi' => $konfirmasi->id])
             ->with('success', "Proses import multi-file selesai! Berhasil menyimpan {$totalInserted} data anomali baru ({$totalDuplicate} data dilewati karena sudah ada).");
+    }
+
+    /**
+     * Sinkronisasi pemetaan alokasi petugas ke data anomali dari halaman Anomali
+     */
+    public function sync(Request $request)
+    {
+        $idKegiatan = $request->filled('id_kegiatan') ? (int)$request->id_kegiatan : null;
+        $result = AnomaliSyncService::syncAlokasi($idKegiatan);
+
+        $msg = "Sinkronisasi berhasil! {$result['updated']} dari {$result['total']} data anomali berhasil diperbarui pemetaan petugasnya.";
+        return back()->with('success', $msg);
     }
 }

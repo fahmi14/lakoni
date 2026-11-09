@@ -38,8 +38,13 @@ class Kegiatan extends Model
 
     public function isAktif(): bool
     {
+        if (!$this->mulai || !$this->selesai) {
+            return false;
+        }
         $today = now()->startOfDay();
-        return $today->between($this->mulai->startOfDay(), $this->selesai->endOfDay());
+        $start = min($this->mulai->startOfDay(), $this->selesai->startOfDay());
+        $end = max($this->mulai->endOfDay(), $this->selesai->endOfDay());
+        return $today->between($start, $end);
     }
 
     protected static function booted()

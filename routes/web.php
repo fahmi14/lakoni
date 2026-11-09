@@ -54,6 +54,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('users', UserController::class);
 
     // 2. Master Wilayah
+    Route::get('wilayah/search-ajax', [WilayahController::class, 'searchAjax'])->name('wilayah.search-ajax');
+    Route::post('wilayah/bulk-delete', [WilayahController::class, 'bulkDelete'])->name('wilayah.bulk-delete');
     Route::resource('wilayah', WilayahController::class)->except(['show']);
 
     // 3. Manajemen Kegiatan
@@ -66,6 +68,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('alokasi/template', [AlokasiController::class, 'downloadTemplate'])->name('alokasi.template');
     Route::get('alokasi/import', [AlokasiController::class, 'showImport'])->name('alokasi.import');
     Route::post('alokasi/import', [AlokasiController::class, 'import'])->name('alokasi.import.process');
+    Route::post('alokasi/sync', [AlokasiController::class, 'sync'])->name('alokasi.sync');
+    Route::post('alokasi/bulk-delete', [AlokasiController::class, 'bulkDelete'])->name('alokasi.bulk-delete');
     Route::resource('alokasi', AlokasiController::class);
 
     // 6. Manajemen Anomali, Template & Download Respon
@@ -74,9 +78,16 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('anomali/import', [AnomaliController::class, 'showImport'])->name('anomali.import');
     Route::post('anomali/preview', [AnomaliController::class, 'previewImport'])->name('anomali.preview');
     Route::post('anomali/execute-import', [AnomaliController::class, 'executeImport'])->name('anomali.execute-import');
+    Route::post('anomali/sync', [AnomaliController::class, 'sync'])->name('anomali.sync');
+    Route::post('anomali/bulk-delete', [AnomaliController::class, 'bulkDelete'])->name('anomali.bulk-delete');
     Route::resource('anomali', AnomaliController::class);
 
     // 7. Monitoring Konfirmasi Anomali (Rekap Gabungan Petugas & Template)
     Route::get('monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
     Route::get('monitoring/rekap-data', [MonitoringController::class, 'getRekapData'])->name('monitoring.rekap-data');
+
+    // 8. Panduan & Infografis
+    Route::get('panduan-infografis', function () {
+        return view('panduan.infografis');
+    })->name('panduan.infografis');
 });

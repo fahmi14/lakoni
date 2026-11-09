@@ -4,11 +4,22 @@
 
 @section('content')
 <div class="row mb-4 align-items-center">
-    <div class="col-md-6">
+    <div class="col-md-5">
         <h3 class="fw-bold brand-font text-dark mb-1">Manajemen Alokasi Petugas</h3>
         <p class="text-muted mb-0">Petugas PPL, PML dan Wilayah Tugas per Kegiatan</p>
     </div>
-    <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-wrap gap-2 justify-content-md-end">
+    <div class="col-md-7 text-md-end mt-3 mt-md-0 d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+        <!-- Tombol Sinkron ke Anomali -->
+        <form action="{{ route('alokasi.sync') }}" method="POST" class="d-inline">
+            @csrf
+            @if(request()->filled('id_kegiatan'))
+                <input type="hidden" name="id_kegiatan" value="{{ request('id_kegiatan') }}">
+            @endif
+            <button type="submit" class="btn btn-pastel-warning shadow-sm" title="Sinkronkan pemetaan petugas yang baru diubah ke tabel anomali">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Sinkron ke Anomali
+            </button>
+        </form>
+
         <a href="{{ route('alokasi.template') }}" class="btn btn-pastel-soft shadow-sm" title="Unduh format spreadsheet">
             <i class="fa-solid fa-file-arrow-down me-1 text-primary"></i> Download Template
         </a>
@@ -21,12 +32,12 @@
     </div>
 </div>
 
-<!-- Filter Box Kalem -->
+<!-- Filter Box Kalem & Tombol Bulk Delete -->
 <div class="card card-clean p-4 mb-4">
     <form action="{{ route('alokasi.index') }}" method="GET" class="row g-3 align-items-center">
-        <div class="col-md-5">
+        <div class="col-md-4">
             <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Kegiatan</label>
-            <select name="id_kegiatan" class="form-select">
+            <select name="id_kegiatan" class="form-select" id="filter_kegiatan">
                 <option value="">-- Semua Kegiatan --</option>
                 @foreach($kegiatans as $keg)
                     <option value="{{ $keg->id }}" {{ request('id_kegiatan') == $keg->id ? 'selected' : '' }}>
@@ -35,17 +46,51 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-md-5">
-            <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Pencarian Petugas</label>
-            <input type="text" name="search" class="form-control" placeholder="Ketik nama PPL atau PML..." value="{{ request('search') }}">
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Jenis Wilayah</label>
+            <select name="tipe_wilayah" class="form-select" id="filter_tipe_wilayah">
+                <option value="">-- Semua Jenis Wilayah --</option>
+                @foreach($tipeWilayahs as $tw)
+                    @if($tw)
+                        <option value="{{ $tw }}" {{ request('tipe_wilayah') == $tw ? 'selected' : '' }}>
+                            {{ strtoupper($tw) }}
+                        </option>
+                    @endif
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Pencarian Petugas / Wilayah</label>
+            <input type="text" name="search" class="form-control" placeholder="Ketik nama PPL, PML, atau Wilayah..." value="{{ request('search') }}">
         </div>
         <div class="col-md-2 d-flex gap-2 align-items-end pt-md-4">
             <button type="submit" class="btn btn-pastel-soft flex-grow-1"><i class="fa-solid fa-filter me-1"></i> Filter</button>
-            @if(request()->has('id_kegiatan') || request()->has('search'))
+            @if(request()->has('id_kegiatan') || request()->has('tipe_wilayah') || request()->has('search'))
                 <a href="{{ route('alokasi.index') }}" class="btn btn-light border" title="Reset filter"><i class="fa-solid fa-arrows-rotate"></i></a>
             @endif
         </div>
     </form>
+</div>
+
+<!-- Bar Aksi Tambahan: Info Total & Tombol Hapus Masal (Bulk Delete by Kegiatan & Jenis) -->
+<div class="d-flex flex-wrap align-items-center justify-content-between pb-2 mb-3 gap-2">
+    <div class="text-muted small">
+        Menampilkan <strong>{{ $alokasis->total() }}</strong> data alokasi petugas
+    </div>
+
+    <!-- Tombol Hapus Alokasi by Kegiatan & Jenis Wilayah (Desain Pastel & Elegan) -->
+    <div>
+        <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs" 
+                style="background: #fff1f2; color: #e11d48; border: 1.5px solid #fecdd3; transition: all 0.2s;"
+                onmouseover="this.style.background='#ffe4e6'; this.style.borderColor='#fda4af'; this.style.transform='translateY(-1px)';"
+                onmouseout="this.style.background='#fff1f2'; this.style.borderColor='#fecdd3'; this.style.transform='translateY(0)';"
+                data-bs-toggle="modal" data-bs-target="#modalBulkDeleteAlokasi">
+            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 22px; height: 22px; background: rgba(225, 29, 72, 0.15);">
+                <i class="fa-solid fa-trash-can" style="font-size: 0.72rem;"></i>
+            </div>
+            <span>Hapus Alokasi by Kegiatan</span>
+        </button>
+    </div>
 </div>
 
 <!-- Alokasi Modern Table -->
@@ -87,7 +132,7 @@
                 </td>
                 <td>
                     @if($a->wilayah)
-                        <span class="badge-pastel-neutral">{{ $a->wilayah->nama }} ({{ $a->wilayah->tipe }})</span>
+                        <span class="badge-pastel-neutral">{{ $a->wilayah->nama }} ({{ strtoupper($a->wilayah->tipe) }})</span>
                     @else
                         <span class="text-muted small">-</span>
                     @endif
@@ -97,7 +142,7 @@
                         <a href="{{ route('alokasi.edit', $a) }}" class="btn-table-action" title="Edit Alokasi">
                             <i class="fa-solid fa-pen-to-square text-primary"></i>
                         </a>
-                        <form action="{{ route('alokasi.destroy', $a) }}" method="POST" onsubmit="return confirm('Hapus data alokasi ini?')" class="d-inline">
+                        <form action="{{ route('alokasi.destroy', $a) }}" method="POST" onsubmit="return confirmPastelAction(this, { title: 'Hapus Alokasi Petugas', message: 'Hapus data alokasi PPL {{ addslashes($a->nama_ppl) }} pada kegiatan ini?' })" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn-table-action text-danger" title="Hapus Alokasi">
@@ -126,5 +171,66 @@
         {{ $alokasis->links('pagination::bootstrap-5') }}
     </div>
     @endif
+</div>
+
+<!-- Modal Hapus Masal Alokasi by Kegiatan & Jenis Wilayah (Desain Pastel & Elegan) -->
+<div class="modal fade" id="modalBulkDeleteAlokasi" tabindex="-1" aria-labelledby="modalBulkDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--lk-radius); overflow: hidden; animation: popUpModal 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <form action="{{ route('alokasi.bulk-delete') }}" method="POST" onsubmit="return confirmPastelAction(this, { title: 'Konfirmasi Hapus Masal Alokasi', message: 'Seluruh alokasi petugas pada kegiatan yang dipilih akan dihapus permanen. Lanjutkan?', btnText: 'Ya, Hapus Masal' })">
+                @csrf
+                <div class="p-4">
+                    <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: #fff1f2; color: #e11d48;">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fw-bold text-dark fs-6 mb-0" id="modalBulkDeleteLabel">Hapus Alokasi by Kegiatan</h5>
+                                <span class="text-muted small" style="font-size: 0.76rem;">Hapus alokasi petugas secara masal</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <p class="text-muted small mb-3" style="line-height: 1.5;">
+                        Pilih <strong>Kegiatan</strong> dan <strong>Jenis Wilayah</strong> yang ingin dihapus. Sistem akan otomatis me-reset relasi alokasi pada data anomali terkait.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Kegiatan <span class="text-danger">*</span></label>
+                        <select name="id_kegiatan" class="form-select" required>
+                            <option value="">-- Pilih Kegiatan --</option>
+                            @foreach($kegiatans as $keg)
+                                <option value="{{ $keg->id }}" {{ request('id_kegiatan') == $keg->id ? 'selected' : '' }}>
+                                    [{{ $keg->kode }}] {{ $keg->nama }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary text-uppercase mb-1">Jenis Wilayah</label>
+                        <select name="tipe_wilayah" class="form-select">
+                            <option value="all">Semua Jenis Wilayah pada Kegiatan Ini</option>
+                            @foreach($tipeWilayahs as $tw)
+                                @if($tw)
+                                    <option value="{{ $tw }}">{{ strtoupper($tw) }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <div class="form-text small text-muted">Pilih "Semua Jenis Wilayah" untuk mengosongkan seluruh alokasi kegiatan tersebut.</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-top px-4 py-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border px-3 rounded-pill text-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger px-4 rounded-pill fw-semibold shadow-xs">
+                        <i class="fa-solid fa-trash-can me-1"></i> Hapus Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection

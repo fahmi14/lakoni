@@ -82,6 +82,12 @@ class PetugasController extends Controller
             'petugas_nama' => $request->nama,
         ]);
 
+        // Cek jika ada intended URL (misal dari direct link konfirmasi anomali)
+        $intended = session()->pull('url.intended');
+        if ($intended) {
+            return redirect()->to($intended);
+        }
+
         return redirect()->route('petugas.anomali.list');
     }
 
@@ -113,22 +119,95 @@ class PetugasController extends Controller
         // Query anomali untuk kegiatan ini yang teralokasi ke petugas ini (atau jika alokasi dicocokkan via teks di detail)
         $query = Anomali::with(['konfirmasi', 'alokasi'])
             ->where('id_kegiatan', $kegiatanId)
-            ->where(function ($q) use ($alokasiIds, $nama) {
+            ->where(function ($q) use ($alokasiIds, $nama, $tipe) {
                 if ($alokasiIds->isNotEmpty()) {
                     $q->whereIn('id_alokasi', $alokasiIds);
                 } else {
-                    // fallback: jika tidak ada FK, cek teks nama di kolom JSON detail
-                    $q->where('detail', 'like', "%{$nama}%");
+                    // Safe fallback: hanya cocokkan jika nama petugas muncul di atribut kunci petugas (PPL / PML / Pencacah / Pengawas)
+                    $targetKeys = ($tipe === 'pml') 
+                        ? ['pml', 'pengawas', 'pemeriksa', 'nama_pml', 'nama pml'] 
+                        : ['ppl', 'pencacah', 'petugas', 'nama_ppl', 'nama ppl'];
+
+                    $q->where(function ($subQ) use ($nama, $targetKeys) {
+                        foreach ($targetKeys as $k) {
+                            $subQ->orWhere("detail->{$k}", 'like', "%{$nama}%");
+                        }
+                    });
                 }
             });
 
+        // Hitung count untuk tab status (semua, belum konfirmasi, sudah konfirmasi)
+        $countSemua = (clone $query)->count();
+        $countBelum = (clone $query)->where(function ($q) {
+            $q->where('status', 'belum')->orWhereNull('status');
+        })->count();
+        $countSudah = (clone $query)->whereNotIn('status', ['belum'])->whereNotNull('status')->count();
+
+        // Filter status
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'belum') {
+                $query->where(function ($q) {
+                    $q->where('status', 'belum')->orWhereNull('status');
+                });
+            } elseif ($request->status === 'sudah') {
+                $query->whereNotIn('status', ['belum'])->whereNotNull('status');
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
-        $anomalis = $query->paginate(15)->withQueryString();
+        // Filter Template Konfirmasi
+        if ($request->filled('id_konfirmasi')) {
+            $query->where('id_konfirmasi', $request->id_konfirmasi);
+        }
 
-        return view('petugas.anomali-list', compact('kegiatan', 'anomalis', 'tipe', 'nama'));
+        // Custom Search: Mencari di semua variabel (detail JSON, nama konfirmasi, status, dll.)
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('detail', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhereHas('konfirmasi', function ($kq) use ($search) {
+                      $kq->where('nama', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Ambil daftar template konfirmasi yang relevan dengan anomali kegiatan ini
+        $availableKonfirmasis = Konfirmasi::whereHas('anomali', function ($aq) use ($kegiatanId) {
+            $aq->where('id_kegiatan', $kegiatanId);
+        })->get();
+
+        // Ambil semua keys variabel detail JSON yang ada pada kegiatan ini
+        $detailKeys = [];
+        if (!empty($kegiatan->kolom) && is_array($kegiatan->kolom)) {
+            $detailKeys = $kegiatan->kolom;
+        } else {
+            $sampleAnomali = Anomali::where('id_kegiatan', $kegiatanId)->first();
+            $detailKeys = ($sampleAnomali && is_array($sampleAnomali->detail)) ? array_keys($sampleAnomali->detail) : [];
+        }
+
+        // Kolom yang dipilih untuk ditampilkan (default: jika ada di request atau ambil 4-5 pertama)
+        $selectedColumns = $request->input('columns', []);
+        if (empty($selectedColumns) && !empty($detailKeys)) {
+            // Default tampilkan hingga 4 kolom pertama
+            $selectedColumns = array_slice($detailKeys, 0, 4);
+        }
+
+        $anomalis = $query->latest('id')->paginate(15)->withQueryString();
+
+        return view('petugas.anomali-list', compact(
+            'kegiatan',
+            'anomalis',
+            'tipe',
+            'nama',
+            'countSemua',
+            'countBelum',
+            'countSudah',
+            'availableKonfirmasis',
+            'detailKeys',
+            'selectedColumns'
+        ));
     }
 
     /**
@@ -140,10 +219,18 @@ class PetugasController extends Controller
         $nama = session('petugas_nama');
 
         if (!$kegiatanId || !$nama) {
-            return redirect()->route('petugas.kegiatan');
+            // Simpan intended URL agar setelah login/pilih petugas langsung diarahkan ke anomali ini
+            session(['url.intended' => route('petugas.konfirmasi', $anomali)]);
+            return redirect()->route('petugas.kegiatan')
+                ->with('info', 'Silakan pilih kegiatan dan identitas petugas Anda untuk melanjutkan konfirmasi.');
         }
 
         $konfirmasi = $anomali->konfirmasi;
+        if (!$konfirmasi) {
+            return redirect()->route('petugas.anomali.list')
+                ->with('error', 'Template konfirmasi untuk lembar anomali ini tidak ditemukan.');
+        }
+
         $pertanyaanList = $konfirmasi->pertanyaan ?? [];
 
         return view('petugas.konfirmasi-form', compact('anomali', 'konfirmasi', 'pertanyaanList', 'nama'));

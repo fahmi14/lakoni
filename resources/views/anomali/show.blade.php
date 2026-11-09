@@ -4,14 +4,17 @@
 
 @section('content')
 @php
-    // Cari nomor HP dari detail JSON jika ada
+    // Cari nomor HP dari detail JSON hanya jika petugas sudah teralokasi ($anomali->alokasi)
     $noHp = null;
-    if (is_array($anomali->detail)) {
+    if ($anomali->alokasi && is_array($anomali->detail)) {
         foreach ($anomali->detail as $k => $v) {
             $keyLower = strtolower(str_replace([' ', '_', '-'], '', $k));
             if (in_array($keyLower, ['nohp', 'hp', 'telepon', 'notelp', 'telp', 'wa', 'whatsapp', 'nomorhp'])) {
-                $noHp = preg_replace('/[^0-9]/', '', (string)$v);
-                break;
+                $cleanDigits = preg_replace('/[^0-9]/', '', (string)$v);
+                if (strlen($cleanDigits) >= 9 && strlen($cleanDigits) <= 15) {
+                    $noHp = $cleanDigits;
+                    break;
+                }
             }
         }
     }

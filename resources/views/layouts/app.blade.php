@@ -433,6 +433,96 @@
             border-color: var(--lk-primary-soft);
         }
 
+        /* ======================================================== */
+        /* MODERN PASTEL MOTION GRAPHIC & PAGE TRANSITIONS         */
+        /* ======================================================== */
+        @keyframes pageFadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes subtleFloat {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        @keyframes softPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes shimmerWave {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* Page Content Entry Motion */
+        .page-motion-wrapper {
+            animation: pageFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Staggered card animations */
+        .stagger-motion-1 { animation: pageFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .stagger-motion-2 { animation: pageFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+        .stagger-motion-3 { animation: pageFadeInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+
+        /* Card interactive lift & glow */
+        .card-clean {
+            background: var(--lk-card-bg);
+            border: 1px solid var(--lk-border-card);
+            border-radius: var(--lk-radius);
+            box-shadow: var(--lk-shadow-sm);
+            transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+        }
+
+        .card-clean:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px -8px rgba(79, 111, 246, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+            border-color: rgba(79, 111, 246, 0.25);
+        }
+
+        /* Subtle float for brand icons & action badges */
+        .brand-icon-motion {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .brand-icon-motion:hover {
+            transform: rotate(-6deg) scale(1.08);
+        }
+
+        /* Interactive buttons with spring micro-interaction */
+        .btn-pastel-primary, .btn-pastel-soft, .btn-pastel-success, .btn-pastel-warning, .btn-pastel-danger {
+            transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-pastel-primary:active, .btn-pastel-soft:active {
+            transform: scale(0.96);
+        }
+
+        /* Table row hover smooth transition */
+        .table-clean tbody tr {
+            transition: background-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .table-clean tbody tr:hover {
+            background-color: #f8faff;
+        }
+
         /* Public Header */
         .public-topbar {
             background: rgba(255, 255, 255, 0.9);
@@ -440,6 +530,7 @@
             -webkit-backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--lk-border-card);
             height: 72px;
+            transition: all 0.3s ease;
         }
     </style>
     @stack('styles')
@@ -453,7 +544,7 @@
         <header class="lakoni-header d-flex align-items-center justify-content-between px-3 px-lg-4 sticky-top">
             <div class="d-flex align-items-center">
                 <a href="{{ route('dashboard') }}" class="d-flex align-items-center text-decoration-none me-4">
-                    <div class="d-inline-flex align-items-center justify-content-center text-white rounded-3 me-2 shadow-sm" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4f6ff6 0%, #0ea5e9 100%);">
+                    <div class="d-inline-flex align-items-center justify-content-center text-white rounded-3 me-2 shadow-sm brand-icon-motion" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4f6ff6 0%, #0ea5e9 100%);">
                         <i class="fa-solid fa-clipboard-check fs-5"></i>
                     </div>
                     <div>
@@ -540,6 +631,12 @@
                             <span>Monitoring</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('panduan.infografis') }}" class="{{ request()->routeIs('panduan.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-compass"></i>
+                            <span>Panduan Alur Kerja</span>
+                        </a>
+                    </li>
                 </ul>
 
                 <div class="sidebar-section-title">Konfigurasi</div>
@@ -560,11 +657,11 @@
             </aside>
 
             <!-- Main Body -->
-            <main class="flex-grow-1 p-4 p-xl-5" style="min-width: 0;">
+            <main class="flex-grow-1 p-4 p-xl-5 page-motion-wrapper" style="min-width: 0;">
                 <div class="container-fluid px-0">
                     <!-- Flash Messages Kalem -->
                     @if(session('success'))
-                        <div class="alert alert-success d-flex align-items-center shadow-sm border-0 mb-4" role="alert" style="background-color: var(--lk-success-soft); color: #065f46; border-radius: var(--lk-radius-sm);">
+                        <div class="alert alert-success d-flex align-items-center shadow-sm border-0 mb-4 stagger-motion-1" role="alert" style="background-color: var(--lk-success-soft); color: #065f46; border-radius: var(--lk-radius-sm);">
                             <i class="fa-solid fa-circle-check fs-5 me-2 text-success"></i>
                             <div>{{ session('success') }}</div>
                             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -572,7 +669,7 @@
                     @endif
 
                     @if(session('error'))
-                        <div class="alert alert-danger d-flex align-items-center shadow-sm border-0 mb-4" role="alert" style="background-color: var(--lk-danger-soft); color: #991b1b; border-radius: var(--lk-radius-sm);">
+                        <div class="alert alert-danger d-flex align-items-center shadow-sm border-0 mb-4 stagger-motion-1" role="alert" style="background-color: var(--lk-danger-soft); color: #991b1b; border-radius: var(--lk-radius-sm);">
                             <i class="fa-solid fa-triangle-exclamation fs-5 me-2 text-danger"></i>
                             <div>{{ session('error') }}</div>
                             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -592,7 +689,7 @@
             <div class="container">
                 <div class="d-flex align-items-center justify-content-between">
                     <a class="d-flex align-items-center text-decoration-none" href="{{ route('home') }}">
-                        <div class="d-inline-flex align-items-center justify-content-center text-white rounded-3 me-2 shadow-sm" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4f6ff6 0%, #0ea5e9 100%);">
+                        <div class="d-inline-flex align-items-center justify-content-center text-white rounded-3 me-2 shadow-sm brand-icon-motion" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4f6ff6 0%, #0ea5e9 100%);">
                             <i class="fa-solid fa-clipboard-check fs-5"></i>
                         </div>
                         <div>
@@ -613,10 +710,10 @@
             </div>
         </header>
 
-        <main class="py-5 flex-grow-1">
+        <main class="py-5 flex-grow-1 page-motion-wrapper">
             <div class="container">
                 @if(session('success'))
-                    <div class="alert alert-success d-flex align-items-center shadow-sm border-0 mb-4" role="alert" style="background-color: var(--lk-success-soft); color: #065f46; border-radius: var(--lk-radius-sm);">
+                    <div class="alert alert-success d-flex align-items-center shadow-sm border-0 mb-4 stagger-motion-1" role="alert" style="background-color: var(--lk-success-soft); color: #065f46; border-radius: var(--lk-radius-sm);">
                         <i class="fa-solid fa-circle-check fs-5 me-2 text-success"></i>
                         <div>{{ session('success') }}</div>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -624,7 +721,7 @@
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-danger d-flex align-items-center shadow-sm border-0 mb-4" role="alert" style="background-color: var(--lk-danger-soft); color: #991b1b; border-radius: var(--lk-radius-sm);">
+                    <div class="alert alert-danger d-flex align-items-center shadow-sm border-0 mb-4 stagger-motion-1" role="alert" style="background-color: var(--lk-danger-soft); color: #991b1b; border-radius: var(--lk-radius-sm);">
                         <i class="fa-solid fa-triangle-exclamation fs-5 me-2 text-danger"></i>
                         <div>{{ session('error') }}</div>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -636,6 +733,37 @@
         </main>
     @endif
 
+    <!-- Modal Dialog Konfirmasi Elegan & Pastel Kotak Global -->
+    <div class="modal fade" id="modalPastelConfirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 4px; overflow: hidden; animation: popUpModal 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); background: #ffffff;">
+                <div class="p-4 text-center">
+                    <div id="modalConfirmIconWrapper" class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 1.35rem;">
+                        <i id="modalConfirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h5 id="modalConfirmTitle" class="fw-bold brand-font text-dark mb-2">Konfirmasi Tindakan</h5>
+                    <p id="modalConfirmMessage" class="text-muted small mb-4" style="line-height: 1.5;">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+                    
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light border px-4 py-2 text-secondary fw-semibold" style="border-radius: 4px;" data-bs-dismiss="modal">
+                            Batal
+                        </button>
+                        <button type="button" id="btnModalConfirmAction" class="btn btn-danger px-4 py-2 fw-semibold shadow-sm" style="border-radius: 4px;">
+                            <i class="fa-solid fa-trash-can me-1"></i> Ya, Lanjutkan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes popUpModal {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+
     <footer class="py-4 text-center text-muted small mt-auto border-top bg-white">
         <div class="container">
             <span class="fw-semibold text-dark">LAKONI</span> &bull; Lembar Konfirmasi Anomali &copy; {{ date('Y') }}. Desain Bersih & Kalem.
@@ -643,6 +771,103 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global Pastel Confirmation Dialog
+        let targetFormToSubmit = null;
+        let targetConfirmCallback = null;
+
+        function showPastelDialog(options = {}) {
+            targetFormToSubmit = null;
+            targetConfirmCallback = typeof options.onConfirm === 'function' ? options.onConfirm : null;
+
+            const modalEl = document.getElementById('modalPastelConfirm');
+            if (!modalEl) {
+                if (confirm(options.message || 'Apakah Anda yakin ingin melanjutkan?')) {
+                    if (targetConfirmCallback) targetConfirmCallback();
+                }
+                return;
+            }
+
+            const title = options.title || 'Konfirmasi Tindakan';
+            const message = options.message || 'Data yang dihapus atau diproses tidak dapat dikembalikan.';
+            const btnText = options.confirmText || options.btnText || 'Ya, Lanjutkan';
+            const btnClass = options.confirmClass || options.btnClass || 'btn-danger';
+            const iconClass = options.iconClass || 'fa-solid fa-triangle-exclamation';
+            const iconBg = options.iconBg || 'rgba(239, 68, 68, 0.1)';
+            const iconColor = options.iconColor || '#ef4444';
+
+            document.getElementById('modalConfirmTitle').textContent = title;
+            document.getElementById('modalConfirmMessage').innerHTML = message;
+
+            const iconWrapper = document.getElementById('modalConfirmIconWrapper');
+            iconWrapper.style.background = iconBg;
+            iconWrapper.style.color = iconColor;
+            document.getElementById('modalConfirmIcon').className = iconClass;
+
+            const confirmBtn = document.getElementById('btnModalConfirmAction');
+            confirmBtn.className = `btn ${btnClass} px-4 py-2 fw-semibold shadow-sm`;
+            confirmBtn.style.borderRadius = '4px';
+            confirmBtn.innerHTML = `<i class="${iconClass} me-1"></i> ${btnText}`;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+
+        function confirmPastelAction(form, options = {}) {
+            targetFormToSubmit = form;
+            targetConfirmCallback = null;
+            const modalEl = document.getElementById('modalPastelConfirm');
+            if (!modalEl) {
+                if (confirm(options.message || 'Apakah Anda yakin ingin melanjutkan?')) {
+                    form.submit();
+                }
+                return false;
+            }
+
+            const title = options.title || 'Konfirmasi Tindakan';
+            const message = options.message || 'Data yang dihapus atau diproses tidak dapat dikembalikan.';
+            const btnText = options.btnText || 'Ya, Hapus Sekarang';
+            const btnClass = options.btnClass || 'btn-danger';
+            const iconClass = options.iconClass || 'fa-solid fa-trash-can';
+            const iconBg = options.iconBg || 'rgba(239, 68, 68, 0.1)';
+            const iconColor = options.iconColor || '#ef4444';
+
+            document.getElementById('modalConfirmTitle').textContent = title;
+            document.getElementById('modalConfirmMessage').innerHTML = message;
+
+            const iconWrapper = document.getElementById('modalConfirmIconWrapper');
+            iconWrapper.style.background = iconBg;
+            iconWrapper.style.color = iconColor;
+            document.getElementById('modalConfirmIcon').className = iconClass;
+
+            const confirmBtn = document.getElementById('btnModalConfirmAction');
+            confirmBtn.className = `btn ${btnClass} px-4 py-2 fw-semibold shadow-sm`;
+            confirmBtn.style.borderRadius = '4px';
+            confirmBtn.innerHTML = `<i class="${iconClass} me-1"></i> ${btnText}`;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            return false;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmBtn = document.getElementById('btnModalConfirmAction');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function() {
+                    const modalEl = document.getElementById('modalPastelConfirm');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+
+                    if (targetConfirmCallback) {
+                        targetConfirmCallback();
+                        targetConfirmCallback = null;
+                    } else if (targetFormToSubmit) {
+                        targetFormToSubmit.submit();
+                    }
+                });
+            }
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>

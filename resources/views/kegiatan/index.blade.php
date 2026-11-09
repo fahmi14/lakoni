@@ -50,7 +50,7 @@
                         <a href="{{ route('kegiatan.edit', $k) }}" class="btn-table-action" title="Edit Kegiatan">
                             <i class="fa-solid fa-pen-to-square text-primary"></i>
                         </a>
-                        <form action="{{ route('kegiatan.destroy', $k) }}" method="POST" onsubmit="return confirm('Hapus kegiatan ini beserta seluruh data alokasi dan anomalinya?')" class="d-inline">
+                        <form action="{{ route('kegiatan.destroy', $k) }}" method="POST" onsubmit="return confirmPastelAction(this, { title: 'Hapus Kegiatan Survei', message: 'Hapus kegiatan [{{ addslashes($k->kode) }}] {{ addslashes($k->nama) }} beserta seluruh data alokasi petugas dan data anomalinya?' })" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn-table-action text-danger" title="Hapus Kegiatan">
